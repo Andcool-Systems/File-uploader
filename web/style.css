@@ -1,0 +1,126 @@
+
+body{
+    font-family: 'Roboto Mono', monospace;
+    display: flex;
+    justify-content: center;
+    background-color: #222222;
+    color: #eeeeee;
+}
+
+main{
+    width: 70%;
+    text-align: left;
+}
+
+h1{
+    font-family: 'Roboto Mono', monospace;
+    font-weight: 400;
+}
+
+hr{
+    border: 1px solid rgb(105, 105, 105);
+}
+p{margin-left: 2px;}
+.input-file span {
+    position: relative;
+	display: inline-block;
+	cursor: pointer;
+	outline: none;
+	text-decoration: none;
+	font-size: 16px;
+	vertical-align: middle;
+	border: 2px rgb(105, 105, 105) solid;
+    border-radius: 15px;
+    padding: 10px;
+    font-weight: 400;
+    margin-left: 2px;
+    margin-bottom: 1%;
+}
+
+.input-file span:hover{
+    background-color: rgb(105, 105, 105);
+}
+
+.input-file input[type=file] {
+	position: absolute;
+	z-index: -1;
+	opacity: 0;
+	display: block;
+	width: 0;
+	height: 0;
+}
+
+#load_mess{
+    /*display: none*/
+    margin: 0;
+    margin-bottom: 1%;
+}
+
+#files_table{
+    display: inline-block;
+    width: 100%;
+}
+#files_table tbody{width: 100%;}
+
+#files_table tr{
+    display: flex;
+    position: relative;
+	outline: none;
+	text-decoration: none;
+	font-size: 16px;
+	vertical-align: middle;
+	border: 2px rgb(105, 105, 105) solid;
+    border-radius: 15px;
+    padding: 5px;
+    font-weight: 400;
+    align-items: center;
+    padding-right: 6px;
+    margin-bottom: 2%;
+}
+
+#files_table button{
+    cursor: pointer;
+    background-color: #222222;
+    color:#eeeeee;
+    font-family: 'Roboto Mono', monospace;
+    font-weight: 400;
+    font-size: 16px;
+    border: 2px rgb(105, 105, 105) solid;
+    border-radius: 10px;
+    padding: 10px;
+    font-weight: 400;
+    margin-left: 3%;
+}
+
+#files_table button:hover{
+    background-color: rgb(105, 105, 105);
+}
+
+#files_table p{
+    color:#eeeeee;
+    font-family: 'Roboto Mono', monospace;
+    font-weight: 400;
+    font-size: 16px;
+    font-weight: 400;
+    margin: 0;
+}
+
+tr {
+    white-space: nowrap;
+}
+
+@media(max-width: 425px){
+    main{width: 80%;}
+    h1{font-size: 130%;}
+    p{font-size: 90%;}
+    .input-file span {
+        font-size: 90%;
+        padding: 7px;
+        border-radius: 10px;
+    }
+    #files_table tr{padding: 2%; flex-wrap: wrap;}
+    #files_table p{font-size: 70%; margin: 0;}
+    #files_table button{font-size: 70%; padding: 7px; margin: 0}
+    #files_table button:hover{background-color:#222222;}
+    .input-file span:hover{background-color: #222222;}
+}
