@@ -18,7 +18,7 @@ Successful execution will return a `200` status code along with the binary file 
 
 
 `POST https://fu.andcool.ru/api/upload/` — Uploads a file to the server.<br>
-The request body should contain the file object. Only one file is allowed, and its size must not exceed 10MB.<br>
+The request body should contain the file object. Only one file is allowed, and its size must not exceed 100MB.<br>
 Maximum request frequency: **Once per minute**<br>
 
 ### Example Request
@@ -42,4 +42,4 @@ Upon successful execution, the API will return a `200` status code and a JSON re
 |------------|--------------------------------------|--------------------------------------------|
 | 400        | No file uploaded                     | No file is present in the request body     |
 | 400        | Bad file extension                   | The file does not have an extension        |
-| 413        | File size exceeds the limit (10MB)   | File size exceeds 10MB                     |
+| 413        | File size exceeds the limit (100MB)   | File size exceeds 100MB                     |
