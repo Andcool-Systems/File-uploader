@@ -51,7 +51,7 @@ async def upload_file(file: UploadFile, request: Request, include_ext: bool = Fa
     if file.filename.find(".") == -1:
         return JSONResponse(content={"status": "error", "message": "Bad file extension"}, status_code=400)
 
-    if file.size > 100 * 1024 * 1024:  # 10MB limit
+    if file.size > 100 * 1024 * 1024:  # 100MB limit
         return JSONResponse(content={"status": "error", "message": "File size exceeds the limit (100MB)"}, status_code=413)
 
     key = str(uuid.uuid4())
@@ -97,23 +97,6 @@ async def send_file(url: str, request: Request):
         return FileResponse(path=result.filename, filename=result.user_filename, media_type=result.type)
 
 
-@app.get("/api/status/")
-@limiter.limit(f"10/minute")
-async def status(request: Request):
-    disk_info = psutil.disk_usage("d://")
-    disk_usage = utils.calculate_size(disk_info.used)
-    disk_total = utils.calculate_size(disk_info.total)
-    
-
-    return JSONResponse(content={"status": "success", 
-                                 "message": "pong",
-                                 "cpu_percent": psutil.cpu_percent(),
-                                 "ram_percent": psutil.virtual_memory().percent,
-                                 "disk_usage": disk_usage,
-                                 "disk_total": disk_total,
-                                 "disk_percent": (disk_info.used * 100) / disk_info.total}, status_code=200)
-
-
 @app.delete("/api/delete/{url}")
 async def status(url: str, request: Request, key: str = ""):
     result = await db.file.find_first(where={"url": url})
@@ -125,9 +108,9 @@ async def status(url: str, request: Request, key: str = ""):
         async with aiohttp.ClientSession("https://api.cloudflare.com") as session:
             async with session.post(f"/client/v4/zones/{os.getenv('ZONE_ID')}/purge_cache", 
                                     json={"files": ["https://fu.andcool.ru/file/" + result.url]},
-                                    headers={"Authorization": "Bearer " + os.getenv('KEY')}) as response:
+                                    headers={"Authorization": "Bearer " + os.getenv('KEY')}):
                 pass
-        
+            
         return JSONResponse(content={"status": "success", "message": "deleted"}, status_code=200)
     else:
         return JSONResponse(content={"status": "error", "message": "invalid unique key"}, status_code=400)
