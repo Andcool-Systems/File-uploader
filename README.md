@@ -20,7 +20,7 @@ Successful execution returns a `200` status code along with the binary file and 
 `POST https://fu.andcool.ru/api/upload?include_ext=false` — Uploads a file to the server.
 The request body should contain the file to be uploaded. Only one file is allowed, and its size should not exceed 100MB.
 The query parameter `include_ext` can be set to `true/false` to indicate whether the file extension should be included in the file URL.
-The maximum request frequency is **t2/minute**.
+The maximum request frequency is **2/minute**.
 
 #### Response Example
 Upon successful execution, the API returns a `200` status code along with a JSON response.
@@ -36,8 +36,19 @@ Upon successful execution, the API returns a `200` status code along with a JSON
 }
 ```
 
-| Error Code | Description                          | Possible Causes                            |
-|------------|--------------------------------------|--------------------------------------------|
-| 400        | No file uploaded                     | No file is present in the request body     |
-| 400        | Bad file extension                   | The file does not have an extension        |
-| 413        | File size exceeds the limit (10MB)   | File size exceeds 10MB                     |
+#### Possible Errors
+| Error Code | Description                           | Possible Reasons                           |
+|------------|---------------------------------------|--------------------------------------------|
+| 204        | No file uploaded                      | No file is present in the request body     |
+| 400        | Bad file extension                    | The file does not have an extension        |
+| 413        | File size exceeds the limit (10MB)    | The file size exceeds 10MB                 |
+
+### File Deletion
+`DELETE https://fu.andcool.ru/api/delete/<file_url>?key=<unique key>` — Deletes a file.
+Successful execution returns a `200` status code, removing the file from the server. As files are additionally cached using CloudFlare, they may remain accessible for up to ~5 hours after deletion.
+
+#### Possible Errors
+| Error Code | Description                   | Possible Reasons                       |
+|------------|-------------------------------|----------------------------------------|
+| 404        | File not found                | The file for deletion is not found     |
+| 400        | Invalid unique key            | The provided unique key is invalid     |
