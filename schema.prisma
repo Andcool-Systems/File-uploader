@@ -1,0 +1,23 @@
+datasource db {
+  // could be postgresql or mysql
+  provider = "sqlite"
+  url      = "file:dataBase.db"
+}
+
+generator db {
+  provider             = "prisma-client-py"
+  interface            = "asyncio"
+  recursive_type_depth = 5
+}
+
+model file {
+  id            Int     @id @default(autoincrement())
+  url           String  @default("")
+  filename      String  @default("")
+  craeted_at    Float   @default(0)
+  last_watched  Float   @default(0)
+  key           String  @default("")
+  type          String  @default("")
+  ext           String  @default("")
+  user_filename String  @default("")
+}

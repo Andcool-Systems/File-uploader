@@ -7,15 +7,37 @@
         <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@800&family=Roboto+Mono&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="style.css">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <script src="script.js"></script>
     </head>
-
+    <script>
+        function open_add(){
+            let add = document.getElementById('addit_sett');
+            let add_btn = document.getElementById('addit_sett_btn');
+            if (add.style.display == "none" || add.style.display == ""){ 
+                add.style.display = "block";
+                add_btn.innerHTML = "▲ Additional settings";
+            }
+            else{ 
+                add.style.display = "none";
+                add_btn.innerHTML = "▼ Additional settings";
+            }
+        }
+    </script>
     <body>
         <main>
             <h1>File uploader</h1>
             <hr>
             <p>
                 A simple file uploader based on Python FastAPI.<br/>
-                Insert files to start uploading. Maximum file size: 10MB</p>
+                Insert files to start uploading. Maximum file size: 100MB</p>
+
+            <button id="addit_sett_btn" onclick="open_add()">▼ Additional settings</button>
+            <div id="addit_sett">
+                <div>
+                    <input type="checkbox" id="include_ext" name="include_ext"/>
+                    <label for="include_ext" class="add_label">Include the file extension in the link</label>
+                </div>
+            </div>
             <form method="post" enctype="multipart/form-data">
                 <label class="input-file">
                        <input type="file" name="file" id="input_file">		
@@ -26,6 +48,5 @@
             <table id="files_table">
             </table>
         </main>
-        <script src="script.js"></script>
     </body>
 </html>

@@ -6,7 +6,6 @@ filetypes = {
     "mp3": "audio/mpeg",
     "mpeg": "audio/mpeg",
     "ogg": "audio/ogg",
-    "wav": "audio/vnd.wave",
 
     "gif": "image/gif",
     "jpeg": "image/jpeg",

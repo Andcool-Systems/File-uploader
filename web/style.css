@@ -26,7 +26,6 @@ p{margin-left: 2px;}
 	display: inline-block;
 	cursor: pointer;
 	outline: none;
-	text-decoration: none;
 	font-size: 16px;
 	vertical-align: middle;
 	border: 2px rgb(105, 105, 105) solid;
@@ -39,6 +38,7 @@ p{margin-left: 2px;}
 
 .input-file span:hover{
     background-color: rgb(105, 105, 105);
+    text-decoration: dashed;
 }
 
 .input-file input[type=file] {
@@ -62,6 +62,7 @@ p{margin-left: 2px;}
 }
 #files_table tbody{width: 100%;}
 
+
 #files_table tr{
     display: flex;
     position: relative;
@@ -84,33 +85,68 @@ p{margin-left: 2px;}
     color:#eeeeee;
     font-family: 'Roboto Mono', monospace;
     font-weight: 400;
-    font-size: 16px;
+    font-size: 80%;
     border: 2px rgb(105, 105, 105) solid;
     border-radius: 10px;
-    padding: 10px;
+    padding: 5px;
     font-weight: 400;
     margin-left: 3%;
 }
 
 #files_table button:hover{
-    background-color: rgb(105, 105, 105);
+    background-color: rgb(179, 0, 0);
 }
 
 #files_table p{
     color:#eeeeee;
     font-family: 'Roboto Mono', monospace;
     font-weight: 400;
-    font-size: 16px;
-    font-weight: 400;
     margin: 0;
+}
+
+#files_table #url{
+    font-size: 95%;
+    cursor: pointer;
+}
+
+#url:hover{text-decoration: underline dashed;}
+
+#files_table #filename{
+    font-size: 70%;
+    color:  rgb(200, 200, 200)
+}
+
+#files_table #cr_time{
+    font-size: 70%;
+    color:  rgb(200, 200, 200)
 }
 
 tr {
     white-space: nowrap;
+    display: flex;
+    justify-content: space-between;
+}
+
+#addit_sett_btn{
+    cursor: pointer;
+    background-color: transparent;
+    border: none;
+    color: white;
+    font-size: 100%;
+    margin-bottom: 1%;
+    font-family: 'Roboto Mono', monospace;
+}
+
+#addit_sett_btn:hover{text-decoration: underline dashed;}
+
+#addit_sett{
+    display: none;
+    padding-left: 1%;
+    margin-bottom: 1%;
 }
 
 @media(max-width: 425px){
-    main{width: 80%;}
+    main{width: 90%;}
     h1{font-size: 130%;}
     p{font-size: 90%;}
     .input-file span {
@@ -119,8 +155,10 @@ tr {
         border-radius: 10px;
     }
     #files_table tr{padding: 2%; flex-wrap: wrap;}
-    #files_table p{font-size: 70%; margin: 0;}
+    #files_table p{font-size: 70%; margin: 0; white-space: wrap;}
     #files_table button{font-size: 70%; padding: 7px; margin: 0}
-    #files_table button:hover{background-color:#222222;}
-    .input-file span:hover{background-color: #222222;}
+    #files_table #url{font-size: 70%;}
+    #addit_sett{padding-left: 2%; margin-bottom: 3%;}
+    #addit_sett_btn{margin-bottom: 3%;}
+    .add_label{font-size: 80%;}
 }
