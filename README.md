@@ -45,7 +45,7 @@ Upon successful execution, the API returns a `200` status code along with a JSON
 
 ### File Deletion
 `DELETE https://fu.andcool.ru/api/delete/<file_url>?key=<unique key>` — Deletes a file.
-Successful execution returns a `200` status code, removing the file from the server. As files are additionally cached using CloudFlare, they may remain accessible for up to ~5 hours after deletion.
+Successful execution returns a `200` status code, removing the file from the server.
 
 #### Possible Errors
 | Error Code | Description                   | Possible Reasons                       |

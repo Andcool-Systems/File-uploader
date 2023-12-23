@@ -2,6 +2,7 @@ from fastapi import FastAPI, UploadFile, Request
 from fastapi.responses import JSONResponse, FileResponse, Response
 import uvicorn
 from filetypes import *
+import aiohttp
 import utils
 from slowapi.errors import RateLimitExceeded
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -13,10 +14,13 @@ import psutil
 from prisma import Prisma
 import uuid
 import os
+from datetime import datetime
+from dotenv import load_dotenv
 
 limiter = Limiter(key_func=get_remote_address)
 app = FastAPI()
 db = Prisma()
+load_dotenv()
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
@@ -59,6 +63,7 @@ async def upload_file(file: UploadFile, request: Request, include_ext: bool = Fa
         await f.write(file.file.read())
 
     created = await db.file.create({
+        "created_date": str(datetime.now()),
         "url": fid,
         "filename": f"uploads/{fn}",
         "craeted_at": time.time(),
@@ -116,6 +121,13 @@ async def status(url: str, request: Request, key: str = ""):
     if result.key == key:
         os.remove(result.filename)
         await db.file.delete(where={"id": result.id})
+
+        async with aiohttp.ClientSession("https://api.cloudflare.com") as session:
+            async with session.post(f"/client/v4/zones/{os.getenv('ZONE_ID')}/purge_cache", 
+                                    json={"files": ["https://fu.andcool.ru/file/" + result.url]},
+                                    headers={"Authorization": "Bearer " + os.getenv('KEY')}) as response:
+                pass
+        
         return JSONResponse(content={"status": "success", "message": "deleted"}, status_code=200)
     else:
         return JSONResponse(content={"status": "error", "message": "invalid unique key"}, status_code=400)

@@ -1,3 +1,4 @@
 /uploads
 /__pycache__
 /dataBase.db
+/.env

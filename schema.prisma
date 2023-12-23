@@ -12,6 +12,7 @@ generator db {
 
 model file {
   id            Int     @id @default(autoincrement())
+  created_date  String  @default("")
   url           String  @default("")
   filename      String  @default("")
   craeted_at    Float   @default(0)
