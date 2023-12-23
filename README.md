@@ -36,19 +36,8 @@ Upon successful execution, the API returns a `200` status code along with a JSON
 }
 ```
 
-#### Possible Errors
-| Error Code | Description                           | Possible Reasons                           |
-|------------|---------------------------------------|--------------------------------------------|
-| 204        | No file uploaded                      | No file is present in the request body     |
-| 400        | Bad file extension                    | The file does not have an extension        |
-| 413        | File size exceeds the limit (10MB)    | The file size exceeds 10MB                  |
-
-### File Deletion
-`DELETE https://fu.andcool.ru/api/delete/<file_url>?key=<unique key>` — Deletes a file.
-Successful execution returns a `200` status code, removing the file from the server. As files are additionally cached using CloudFlare, they may remain accessible for up to ~5 hours after deletion.
-
-#### Possible Errors
-| Error Code | Description                   | Possible Reasons                       |
-|------------|-------------------------------|----------------------------------------|
-| 404        | File not found                | The file for deletion is not found     |
-| 400        | Invalid unique key            | The provided unique key is invalid     |
+| Error Code | Description                          | Possible Causes                            |
+|------------|--------------------------------------|--------------------------------------------|
+| 400        | No file uploaded                     | No file is present in the request body     |
+| 400        | Bad file extension                   | The file does not have an extension        |
+| 413        | File size exceeds the limit (10MB)   | File size exceeds 10MB                     |
