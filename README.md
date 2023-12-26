@@ -119,10 +119,10 @@ Successful execution returns a `200` status code, indicating successful registra
 | 3          | Wrong password                                         | Incorrect password                                |
 | 4          | User not found                                         | Username not found                                |
 
-`POST https://fu.andcool.ru/api/refresh_token` — Refreshes the token.
-Request limit per minute: 10 times
-The request body includes the `accessToken` field containing only the token (without Bearer).
-Successful execution returns a `200` status code along with the `accessToken` field in the request body, containing the new token.
+`POST https://fu.andcool.ru/api/refresh_token` — Refreshes the token.<br>
+Request limit per minute: 10 times<br>
+The request body includes the `accessToken` field containing only the token (without Bearer).<br>
+Successful execution returns a `200` status code along with the `accessToken` field in the request body, containing the new token.<br>
 
 #### Possible Errors
 | errorId    | message                                                | Reasons                                           |
@@ -131,10 +131,10 @@ Successful execution returns a `200` status code along with the `accessToken` fi
 
 Errors described in section `1.1` may also occur.
 
-`POST https://fu.andcool.ru/api/logout` — Logs out of the account.
-Request limit per minute: 10 times
-It takes the `Authorization` header containing the access token.
-Successful execution of the request deletes the provided token and returns a `200` status code.
+`POST https://fu.andcool.ru/api/logout` — Logs out of the account.<br>
+Request limit per minute: 10 times<br>
+It takes the `Authorization` header containing the access token.<br>
+Successful execution of the request deletes the provided token and returns a `200` status code.<br>
 
 #### Possible Errors
-Errors described in section `1.1` may occur as well.
+Errors described in section `1.1` may occur as well.<br>
