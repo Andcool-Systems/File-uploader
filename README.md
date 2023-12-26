@@ -41,7 +41,7 @@ Upon successful execution, the API returns a `200` status code along with a JSON
 |------------|---------------------------------------|--------------------------------------------|
 | 204        | No file uploaded                      | No file is present in the request body     |
 | 400        | Bad file extension                    | The file does not have an extension        |
-| 413        | File size exceeds the limit (10MB)    | The file size exceeds 10MB                 |
+| 413        | File size exceeds the limit (100MB)   | The file size exceeds 100MB                |
 
 ### File Deletion
 `DELETE https://fu.andcool.ru/api/delete/<file_url>?key=<unique key>` — Deletes a file.

@@ -10,7 +10,6 @@ from slowapi.util import get_remote_address
 from fastapi.middleware.cors import CORSMiddleware
 import time
 import aiofiles
-import psutil
 from prisma import Prisma
 import uuid
 import os
@@ -24,7 +23,7 @@ load_dotenv()
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-app.add_middleware(
+app.add_middleware( # Disable CORS
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
@@ -32,37 +31,42 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-file_life_time = 2_592_000
-check_period = 86_400
+file_life_time = 2_592_000 # File life time (unused)
+check_period = 86_400#  File check period (unused)
 
 
 @app.on_event("startup")
 async def startup_event():
-    await db.connect()
+    await db.connect() # Connecting to database
     print("Connected to Data Base")
 
 
-@app.post("/api/upload/")
+@app.get("/favicon.ico") # Favicon handler
+def get_favicon():
+    return FileResponse(path="1.png") 
+
+
+@app.post("/api/upload/") # File upload handler
 @limiter.limit(f"2/minute")
 async def upload_file(file: UploadFile, request: Request, include_ext: bool = False):
-    if not file:
-        return JSONResponse(content={"status": "error", "message": "No file uploaded"}, status_code=204)
+    if not file: # Check, if the file is uploaded
+        return JSONResponse(content={"status": "error", "message": "No file uploaded"}, status_code=204) 
 
-    if file.filename.find(".") == -1:
+    if file.filename.find(".") == -1: # Check, if the file has a extension
         return JSONResponse(content={"status": "error", "message": "Bad file extension"}, status_code=400)
 
     if file.size > 100 * 1024 * 1024:  # 100MB limit
         return JSONResponse(content={"status": "error", "message": "File size exceeds the limit (100MB)"}, status_code=413)
 
-    key = str(uuid.uuid4())
-    ext = "." + file.filename.split(".")[-1]
-    fid = utils.generate_token(10) + (ext if include_ext else "")
-    fn = str(uuid.uuid4()) + ext 
+    key = str(uuid.uuid4()) # Generate unique delete key
+    ext = "." + file.filename.split(".")[-1] # Get file extension
+    fid = utils.generate_token(10) + (ext if include_ext else "") # Generate file url
+    fn = str(uuid.uuid4()) + ext  # Generate file name
 
-    async with aiofiles.open(f"uploads/{fn}", "wb") as f:
+    async with aiofiles.open(f"uploads/{fn}", "wb") as f: # Save file locally
         await f.write(file.file.read())
 
-    created = await db.file.create({
+    created = await db.file.create({ # Creating a file record
         "created_date": str(datetime.now()),
         "url": fid,
         "filename": f"uploads/{fn}",
@@ -83,38 +87,40 @@ async def upload_file(file: UploadFile, request: Request, include_ext: bool = Fa
                                  "user_filename": created.user_filename}, status_code=200)
 
 
-@app.get("/file/{url}")
+@app.get("/file/{url}") # Get file handler
 @limiter.limit(f"10/minute")
 async def send_file(url: str, request: Request):
-    result = await db.file.find_first(where={"url": url})
-    if not result: return JSONResponse(content="File not found!", status_code=404)
-    await db.file.update(where={"id": result.id}, data={"last_watched": time.time()})
+    result = await db.file.find_first(where={"url": url}) # Get file by url
+    if not result: return JSONResponse(content="File not found!", status_code=404) # if file does'n exists
 
-    if result.type != "download":
+    await db.file.update(where={"id": result.id}, data={"last_watched": time.time()}) # Update last watched record
+
+    if result.type != "download": # If Ffile extension recognized
         async with aiofiles.open(result.filename, mode="rb") as f:
-            return Response(await f.read(), media_type=result.type)
-    else:
-        return FileResponse(path=result.filename, filename=result.user_filename, media_type=result.type)
+            return Response(await f.read(), media_type=result.type) # Send file with "Content-type" header
+    else: # If file extension doesn't recognized
+        return FileResponse(path=result.filename, filename=result.user_filename, media_type=result.type) # Send file as FileResponse
 
 
-@app.delete("/api/delete/{url}")
+@app.delete("/api/delete/{url}") # File delete handler
 async def status(url: str, request: Request, key: str = ""):
-    result = await db.file.find_first(where={"url": url})
-    if not result: return JSONResponse(content={"status": "error", "message": "File not found"}, status_code=404)
-    if result.key == key:
-        os.remove(result.filename)
-        await db.file.delete(where={"id": result.id})
+    result = await db.file.find_first(where={"url": url}) # Get file record by url
+    if not result: return JSONResponse(content={"status": "error", "message": "File not found"}, status_code=404) # if file does'n exists
 
-        async with aiohttp.ClientSession("https://api.cloudflare.com") as session:
+    if result.key == key: # If provided key matched with key from database record
+        os.remove(result.filename) # Delete file
+        await db.file.delete(where={"id": result.id}) # Delete file record from database
+
+        async with aiohttp.ClientSession("https://api.cloudflare.com") as session: # Clear file cache from CloudFlare
             async with session.post(f"/client/v4/zones/{os.getenv('ZONE_ID')}/purge_cache", 
                                     json={"files": ["https://fu.andcool.ru/file/" + result.url]},
                                     headers={"Authorization": "Bearer " + os.getenv('KEY')}):
                 pass
             
         return JSONResponse(content={"status": "success", "message": "deleted"}, status_code=200)
-    else:
-        return JSONResponse(content={"status": "error", "message": "invalid unique key"}, status_code=400)
+    else: # If provided key doesn't matched with key from database record
+        return JSONResponse(content={"status": "error", "message": "invalid unique key"}, status_code=400) 
     
 
-if __name__ == "__main__":
+if __name__ == "__main__": # Start program
     uvicorn.run("main:app", reload=True)
