@@ -67,7 +67,7 @@ Upon successful execution, the API returns a `200` status code along with a JSON
 |------------|---------------------------------------|--------------------------------------------|
 | 204        | No file uploaded                      | No file is present in the request body     |
 | 400        | Bad file extension                    | The file does not have an extension        |
-| 413        | File size exceeds the limit (100MB)   | The file size exceeds 100MB                |
+| 413        | File size exceeds the limit (100MB)    | The file size exceeds 100MB                 |
 
 `DELETE https://fu.andcool.ru/api/delete/<file_url>?key=<unique key>` — Deletes a file.
 Successful execution returns a `200` status code, removing the file from the server.
@@ -77,3 +77,64 @@ Successful execution returns a `200` status code, removing the file from the ser
 |------------|-------------------------------|----------------------------------------|
 | 404        | File not found                | The file for deletion is not found     |
 | 400        | Invalid unique key            | The provided unique key is invalid     |
+
+### 1.2 Authorization API
+
+`POST https://fu.andcool.ru/api/register or login` — Registers a new account / logs into an account.
+Request limit per minute: 10 times
+Both requests accept the same request body but have different errors.
+
+#### Request Example
+```json
+{
+    "username": "Andcool",
+    "password": "My cool password"
+}
+```
+
+Successful execution returns a `200` status code, indicating successful registration / login.
+```json
+{
+    "status": "success",
+    "accessToken": <token>,
+    "username": "My cool username",
+    "message": "logged in with password"
+}
+```
+
+#### Possible Errors
+**Common for both requests:**<br>
+| errorId    | message                                                | Reasons                                           |
+|------------|--------------------------------------------------------|---------------------------------------------------|
+| 2          | No username/password provided                          | Username/password fields are missing in the request |
+
+**Errors for /register:**<br>
+| errorId    | message                                                | Reasons                                           |
+|------------|--------------------------------------------------------|---------------------------------------------------|
+| 1          | An account with this name is already registered        | A user with the given username already exists     |
+
+**Errors for /login:**<br>
+| errorId    | message                                                | Reasons                                           |
+|------------|--------------------------------------------------------|---------------------------------------------------|
+| 3          | Wrong password                                         | Incorrect password                                |
+| 4          | User not found                                         | Username not found                                |
+
+`POST https://fu.andcool.ru/api/refresh_token` — Refreshes the token.
+Request limit per minute: 10 times
+The request body includes the `accessToken` field containing only the token (without Bearer).
+Successful execution returns a `200` status code along with the `accessToken` field in the request body, containing the new token.
+
+#### Possible Errors
+| errorId    | message                                                | Reasons                                           |
+|------------|--------------------------------------------------------|---------------------------------------------------|
+| 5          | No access token provided                               | The `accessToken` field is missing in the request |
+
+Errors described in section `1.1` may also occur.
+
+`POST https://fu.andcool.ru/api/logout` — Logs out of the account.
+Request limit per minute: 10 times
+It takes the `Authorization` header containing the access token.
+Successful execution of the request deletes the provided token and returns a `200` status code.
+
+#### Possible Errors
+Errors described in section `1.1` may occur as well.
