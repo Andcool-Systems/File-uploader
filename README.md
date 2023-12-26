@@ -1,10 +1,11 @@
 # File Uploader
 
-The file uploader is implemented in the Python programming language using FastAPI. All uploaded files are stored on the server. The API provides the ability to preview and download files based on their file extensions.
+The file uploader is implemented in the Python programming language using FastAPI. All uploaded files are stored on the server. The API provides the ability to preview and download files based on their file extensions.<br>
 
 ## API Documentation
 
-The API is currently hosted at [fu.andcool.ru](https://fu.andcool.ru/). Page redirection is handled through the nginx proxy server. The API consists of 3 endpoint URLs:
+The API is currently hosted at [fu.andcool.ru](https://fu.andcool.ru/). <br>
+Page redirection is handled through the nginx proxy server. The API consists of 3 endpoint URLs:<br>
 
 - `/file/` — Endpoint where all files are located.
 - `/api/upload` — Endpoint for receiving file upload requests.
@@ -12,11 +13,13 @@ The API is currently hosted at [fu.andcool.ru](https://fu.andcool.ru/). Page red
 
 ### 1.1 Authorization Errors
 
-All requests requiring the `Authorization` header may encounter errors related to authorization issues. The `Authorization` header should have the format `Authorization: Bearer <token>`.
+All requests requiring the `Authorization` header may encounter errors related to authorization issues. <br>
+The `Authorization` header should have the format `Authorization: Bearer <token>`.<br>
 
 #### Response Example
 
-All errors of this type follow a consistent response format and always return an HTTP code of `400`. This section will be referred to as `1.1` in the documentation.
+All errors of this type follow a consistent response format and always return an HTTP code of `400`. <br>
+This section will be referred to as `1.1` in the documentation.<br>
 
 ```json
 {
@@ -28,7 +31,7 @@ All errors of this type follow a consistent response format and always return an
 }
 ```
 
-List of errors:
+List of errors:<br>
 
 | errorId | message                                               | Reasons                                       |
 | ------- | ----------------------------------------------------- | --------------------------------------------- |
@@ -40,7 +43,9 @@ List of errors:
 
 ### 1.2 Basic API
 
-`GET /file/<file_url>` — Retrieves a file based on the URL. Successful execution returns a `200` status code and the binary file with the `Content-Type`. If the file type cannot be determined, the API returns the file in download mode.
+`GET /file/<file_url>` — Retrieves a file based on the URL. <br>
+Successful execution returns a `200` status code and the binary file with the `Content-Type`. <br>
+If the file type cannot be determined, the API returns the file in download mode.<br>
 
 #### Possible Errors
 
@@ -48,13 +53,18 @@ List of errors:
 | ---------- | ----------------------------- | ------------------------------------------ |
 | 404        | File not found                | The file referenced by the code does not exist |
 
-`POST /api/upload?include_ext=false` — Uploads a file to the server. The request body should contain the file to be uploaded. Only one file is allowed, and its size should not exceed 100MB. The query parameter `include_ext` can be set to `true/false` to indicate whether the file extension should be included in the file URL. The maximum request frequency is **twice per minute**. The request can also include the `Authorization` header, containing the user's unique token.
+`POST /api/upload?include_ext=false` — Uploads a file to the server. <br>
+The request body should contain the file to be uploaded.<br> 
+Only one file is allowed, and its size should not exceed 100MB. <br>
+The query parameter `include_ext` can be set to `true/false` to indicate whether the file extension should be included in the file URL. <br>
+The maximum request frequency is **2 per minute**. <br>
+The request can also include the `Authorization` header, containing the user's unique token.<br>
 
-If the token is not provided or is not valid, the `synced` field in the response body will be set to `false`. The file will be uploaded to the server regardless of whether the `Authorization` header is included in the request. The `auth_error` field in the response body contains the authentication error (section `1.1`), and if there is no error, the field will be `{}`.
+If the token is not provided or is not valid, the `synced` field in the response body will be set to `false`. The file will be uploaded to the server regardless of whether the `Authorization` header is included in the request. The `auth_error` field in the response body contains the authentication error (section `1.1`), and if there is no error, the field will be `{}`.<br>
 
 #### Response Example
 
-Upon successful execution, the API returns a `200` status code along with a JSON response.
+Upon successful execution, the API returns a `200` status code along with a JSON response.<br>
 
 ```json
 {
@@ -78,7 +88,8 @@ Upon successful execution, the API returns a `200` status code along with a JSON
 | 400        | Bad file extension             | The file does not have an extension      |
 | 413        | File size exceeds the limit (100MB) | The file size exceeds 100MB         |
 
-`DELETE /api/delete/<file_url>?key=<unique key>` — Deletes a file. Successful execution returns a `200` status code, removing the file from the server.
+`DELETE /api/delete/<file_url>?key=<unique key>` — Deletes a file. <br>
+Successful execution returns a `200` status code, removing the file from the server.<br>
 
 #### Possible Errors
 
@@ -89,7 +100,8 @@ Upon successful execution, the API returns a `200` status code along with a JSON
 
 ### 1.2 Authorization API
 
-`POST /api/register or login` — Registers a new account / logs into an account. Request limit per minute: 10 times. Both requests accept the same request body but have different errors.
+`POST /api/register or login` — Registers a new account / logs into an account. <br>
+Request limit per minute: 10 times. Both requests accept the same request body but have different errors.<br>
 
 #### Request Example
 
@@ -100,7 +112,7 @@ Upon successful execution, the API returns a `200` status code along with a JSON
 }
 ```
 
-Successful execution returns a `200` status code, indicating successful registration / login.
+Successful execution returns a `200` status code, indicating successful registration / login.<br>
 
 ```json
 {
@@ -132,7 +144,10 @@ Successful execution returns a `200` status code, indicating successful registra
 | 3       | Wrong password                                | Incorrect password                               |
 | 4       | User not found                                | Username not found                                |
 
-`POST /api/refresh_token` — Refreshes the token. Request limit per minute: 10 times. The request body includes the `accessToken` field containing only the token (without Bearer). Successful execution returns a `200` status code along with the `accessToken` field in the request body, containing the new token.
+`POST /api/refresh_token` — Refreshes the token. <br>
+Request limit per minute: 10 times. <br>
+The request body includes the `accessToken` field containing only the token (without `Bearer``). <br>
+Successful execution returns a `200` status code along with the `accessToken` field in the request body, containing the new token.<br>
 
 #### Possible Errors
 
@@ -140,17 +155,21 @@ Successful execution returns a `200` status code, indicating successful registra
 | ------- | --------------------------------------------- | ------------------------------------------------ |
 | 5       | No access token provided                      | The `accessToken` field is missing in the request |
 
-Errors described in section `1.1` may also occur.
+Errors described in section `1.1` may also occur.<br>
 
-`POST /api/logout` — Logs out of the account. Request limit per minute: 10 times. It takes the `Authorization` header containing the access token. Successful execution of the request deletes the provided token and returns a `200` status code
+`POST /api/logout` — Logs out of the account. <br>
+Request limit per minute: 10 times. <br>
+It takes the `Authorization` header containing the access token. <br>
+Successful execution of the request deletes the provided token and returns a `200` status code<br>
 
-.
 
 #### Possible Errors
 
-Errors described in section `1.1` may occur as well.
+Errors described in section `1.1` may occur as well.<br>
 
-`GET /api/getFiles` — Gets a list of files. It takes the `Authorization` header containing the access token. Retrieves a list of all files associated with this account.
+`GET /api/getFiles` — Gets a list of files. <br>
+It takes the `Authorization` header containing the access token. <br>
+Retrieves a list of all files associated with this account.<br>
 
 #### Response Example
 
@@ -183,4 +202,4 @@ Errors described in section `1.1` may occur as well.
 
 #### Possible Errors
 
-Errors described in section `1.1` may occur as well.
+Errors described in section `1.1` may occur as well.<br>
