@@ -1,7 +1,7 @@
 import random
 
 def generate_token(length):
-    base = "abcdefghijklmnopqrstuvwxyz123456789-+="
+    base = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789-+="
     return "".join([random.choice(base) for x in range(length)])
 
 def calculate_size(size: int):

@@ -7,6 +7,7 @@
         <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@800&family=Roboto+Mono&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="style.css">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <script src="login/script.js"></script>
         <script src="script.js"></script>
     </head>
     <script>
@@ -23,14 +24,19 @@
             }
         }
     </script>
-    <body>
+    <body id="dropContainer">
         <main>
             <h1>File uploader</h1>
+            <nav>
+                <a href="https://fu.andcool.ru" class="selected">Home</a>
+                <a href="https://fu.andcool.ru/login/" id="login_page_a">Login</a>
+            </nav>
             <hr>
             <p>
                 A simple file uploader based on Python FastAPI.<br/>
                 Insert files to start uploading. Maximum file size: 100MB</p>
-
+            <p id="login_mess">To access your files from any device, sign in. 
+                The files will be linked to your account and you will have full access to them.</p>
             <button id="addit_sett_btn" onclick="open_add()">▼ Additional settings</button>
             <div id="addit_sett">
                 <div>

@@ -5,6 +5,8 @@ body{
     justify-content: center;
     background-color: #222222;
     color: #eeeeee;
+    height: 100%;
+    overflow-x: hidden;
 }
 
 main{
@@ -113,7 +115,7 @@ p{margin-left: 2px;}
 
 #files_table #filename{
     font-size: 70%;
-    color:  rgb(200, 200, 200)
+    color:  rgb(200, 200, 200);
 }
 
 #files_table #cr_time{
@@ -122,9 +124,17 @@ p{margin-left: 2px;}
 }
 
 tr {
-    white-space: nowrap;
+    white-space: normal;
     display: flex;
     justify-content: space-between;
+}
+
+tbody{
+    max-width: 90%;
+}
+
+td div{
+    max-width: 90%;
 }
 
 #addit_sett_btn{
@@ -145,6 +155,54 @@ tr {
     margin-bottom: 1%;
 }
 
+#creation_date_div{
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+}
+.online{
+    display: block;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    margin-left: 0.5%;
+}
+#online{
+    background: rgb(25, 168, 44);
+    background: radial-gradient(circle, rgb(25, 168, 44) 0%, #222222 60%);
+}
+
+#offline{
+    background: rgb(168, 168, 168);
+    background: radial-gradient(circle, rgb(163, 161, 161) 0%, #222222 60%);
+}
+
+nav a{
+    cursor: pointer;
+    color: white;
+    text-decoration: none;
+}
+nav a:hover{
+    font-weight: 600;
+    text-decoration: underline dashed;
+}
+
+#login_mess{
+    font-style: italic;
+}
+
+.selected{font-weight: 600;}
+
+#dropContainer{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+}
+
 @media(max-width: 425px){
     main{width: 90%;}
     h1{font-size: 130%;}
@@ -155,10 +213,11 @@ tr {
         border-radius: 10px;
     }
     #files_table tr{padding: 2%; flex-wrap: wrap;}
-    #files_table p{font-size: 70%; margin: 0; white-space: wrap;}
+    #files_table p{font-size: 70%; margin: 0; word-break: break-all;}
     #files_table button{font-size: 70%; padding: 7px; margin: 0}
     #files_table #url{font-size: 70%;}
     #addit_sett{padding-left: 2%; margin-bottom: 3%;}
     #addit_sett_btn{margin-bottom: 3%;}
     .add_label{font-size: 80%;}
+    #files_table tr {flex-direction: column; align-items: flex-start;}
 }

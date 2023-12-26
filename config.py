@@ -28,3 +28,5 @@ filetypes = {
     "avi": "video/x-msvideo",
 }
 default = "application/x-msdownload"
+
+accesLifeTime = 432_000
