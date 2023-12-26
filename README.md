@@ -146,7 +146,7 @@ Successful execution returns a `200` status code, indicating successful registra
 
 `POST /api/refresh_token` — Refreshes the token. <br>
 Request limit per minute: 10 times. <br>
-The request body includes the `accessToken` field containing only the token (without `Bearer``). <br>
+The request body includes the `accessToken` field containing only the token (without `Bearer`). <br>
 Successful execution returns a `200` status code along with the `accessToken` field in the request body, containing the new token.<br>
 
 #### Possible Errors
