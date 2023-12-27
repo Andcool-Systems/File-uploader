@@ -30,10 +30,12 @@ function append_to_files_arr(data, id){
   	let newCell = newRow.insertCell();
     let newCell2 = newRow.insertCell();
     // Append a text node to the cell
-    let url = document.createElement("p");
+    let url = document.createElement("a");
     url.innerHTML = data['file_url_full'];
 	url.id = "url";
-	url.onclick = function(){navigator.clipboard.writeText(data['file_url_full']);}
+	//url.onclick = function(){navigator.clipboard.writeText(data['file_url_full']);}
+	url.href = data['file_url_full'];
+	url.target = "_blank";
 
 	let filename = document.createElement("p");
     filename.innerHTML = data['user_filename'];
@@ -50,15 +52,14 @@ function append_to_files_arr(data, id){
     button.innerHTML = 'Delete';
 	button.onclick = function(){delete_file(data, id);}
 
-	let online = document.createElement("span");
+	let online = document.createElement("img");
 	online.className = "online";
 	if (data.synced){
-		online.id = "online";
+		online.src = "./res/globe_on.png";
 		online.title = "Synchronized with the server";
 	}else{
-		online.id = "offline";
+		online.src = "./res/globe_off.png";
 		online.title = "Stored on local browser";
-		online.className
 	}
 
 	let urls_div = document.createElement("div");
