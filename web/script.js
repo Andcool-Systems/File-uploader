@@ -104,7 +104,7 @@ async function fetch_files(accessToken, len){
 			}
 		})
 		if (!response) return;
-		if (response.status == 400){
+		if (response.status == 401){
 			localStorage.removeItem("accessToken");
 			return [];
 		}
@@ -148,7 +148,7 @@ async function logout(){
 			}
 		})
 		if (!response) return;
-		if (response.status == 400 || response.status == 200){
+		if (response.status == 401 || response.status == 200){
 			localStorage.removeItem("accessToken");
 
 			let logim_page_btn = document.getElementById('login_page_a');
