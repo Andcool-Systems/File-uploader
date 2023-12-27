@@ -18,7 +18,7 @@ The `Authorization` header should have the format `Authorization: Bearer <token>
 
 #### Response Example
 
-All errors of this type follow a consistent response format and always return an HTTP code of `400`. <br>
+All errors of this type follow a consistent response format and always return an HTTP code of `401`. <br>
 This section will be referred to as `1.1` in the documentation.<br>
 
 ```json

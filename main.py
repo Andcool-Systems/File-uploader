@@ -184,7 +184,7 @@ async def getFiles(request: Request,
                    Authorization: Annotated[Union[str, None], Header(convert_underscores=False)] = None):
     token_db, auth_error = await check_token(Authorization)  # Check token validity
     if not token_db:  # If token is not valid
-        return JSONResponse(content={"status": "error", "auth_error": auth_error}, status_code=400)
+        return JSONResponse(content={"status": "error", "auth_error": auth_error}, status_code=401)
     
     files = await db.file.find_many(where={"user_id": token_db.user_id})  # Get all user files from db
     files_response = []
@@ -280,7 +280,7 @@ async def login(request: Request):
     
     token_db, auth_error = await check_token(body["accessToken"])  # Check token validity
     if not token_db:  # If token is not valid
-        return JSONResponse(content={"status": "error", "auth_error": auth_error}, status_code=400)
+        return JSONResponse(content={"status": "error", "auth_error": auth_error}, status_code=401)
     
     access = jwt.encode({"user_id": int(token_db.user_id), "ExpiresAt": time.time() + accesLifeTime}, 
                         "accessTokenSecret", algorithm="HS256")  # Generate new token
@@ -299,7 +299,7 @@ async def login(request: Request,
     
     token_db, auth_error = await check_token(Authorization)  # Check token validity
     if not token_db:  # If token is not valid
-        return JSONResponse(content={"status": "error", "auth_error": auth_error}, status_code=400)
+        return JSONResponse(content={"status": "error", "auth_error": auth_error}, status_code=401)
 
     await db.token.delete(where={"id": token_db.id})  # Delete token record from db
 
