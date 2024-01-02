@@ -33,9 +33,9 @@ function append_to_files_arr(data, id){
     let url = document.createElement("a");
     url.innerHTML = data['file_url_full'];
 	url.id = "url";
-	//url.onclick = function(){navigator.clipboard.writeText(data['file_url_full']);}
-	url.href = data['file_url_full'];
-	url.target = "_blank";
+	url.onclick = function(){navigator.clipboard.writeText(data['file_url_full']);}
+	//url.href = data['file_url_full'];
+	//url.target = "_blank";
 
 	let filename = document.createElement("p");
     filename.innerHTML = data['user_filename'];

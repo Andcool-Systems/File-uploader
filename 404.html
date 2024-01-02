@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <title>File uploader</title>
+        <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@800&family=Roboto+Mono&display=swap" rel="stylesheet">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <style>
+        body{
+            font-family: 'Roboto Mono', monospace;
+            display: flex;
+            justify-content: center;
+            background-color: #222222;
+            color: #eeeeee;
+            height: 100%;
+            overflow-x: hidden;
+        }
+
+        main{
+            width: 70%;
+            text-align: left;
+        }
+
+        h1{
+            font-family: 'Roboto Mono', monospace;
+            font-weight: 400;
+        }
+
+        hr{
+            border: 1px solid rgb(105, 105, 105);
+        }
+        p{font-size: 110%;}
+
+
+        nav a{
+            cursor: pointer;
+            color: white;
+            text-decoration: none;
+        }
+        nav a:hover{
+            font-weight: 600;
+            text-decoration: underline dashed;
+        }
+
+        #login_mess{
+            font-style: italic;
+        }
+        #main_div{
+            text-align: center;
+        }
+
+        @media(max-width: 425px){
+            main{width: 90%;}
+            h1{font-size: 130%;}
+            p{font-size: 90%;}
+        }
+    </style>
+    <body>
+        <main>
+            <h1>File uploader</h1>
+            <nav>
+                <a href="https://fu.andcool.ru">Home</a>
+                <a href="https://github.com/Andcool-Systems/File-uploader" target="_blank">GitHub</a>
+            </nav>
+            <hr>
+            <div id="main_div">
+                <h1>404</h1>
+                <p>Hmmm... It looks like the file has not been found.</p>
+            </div>
+        </main>
+    </body>
+</html>

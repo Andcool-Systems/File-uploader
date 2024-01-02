@@ -1,3 +1,8 @@
+"""
+created by AndcoolSystems, 2023-2024
+"""
+
+
 from fastapi import FastAPI, UploadFile, Request, Header
 from fastapi.responses import JSONResponse, FileResponse, Response
 from typing import Annotated, Union
@@ -90,7 +95,6 @@ async def upload_file(file: UploadFile, request: Request, include_ext: bool = Fa
     
     user_id = -1
     saved_to_account = False
-    auth_error = {}
 
     token_db, auth_error = await check_token(Authorization)  # Check token
     if token_db:  # If token is okay
@@ -136,9 +140,11 @@ async def upload_file(file: UploadFile, request: Request, include_ext: bool = Fa
 @app.get("/file/{url}")  # Get file handler
 @limiter.limit(f"10/minute")
 async def send_file(url: str, request: Request):
-
     result = await db.file.find_first(where={"url": url})  # Get file by url
-    if not result: return JSONResponse(content="File not found!", status_code=404)  # if file does'n exists
+    if not result: 
+        async with aiofiles.open("404.html", mode="rb") as f:
+            return Response(await f.read(), media_type="text/html", status_code=404) # if file does'n exists
+        
     print(request.headers.get('CF-IPCountry'))
 
     if 'sec-fetch-dest' in request.headers:

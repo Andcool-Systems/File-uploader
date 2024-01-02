@@ -19,6 +19,7 @@ class Circle{
         this.last_set = 1;
         this.random_time = getRandomInt(1000, 5000);
         this.random_sin_mod = getRandomInt(1, 3);
+        this.last_scroll = document.documentElement.scrollTop || document.body.scrollTop;
     }
 
     tick(){
@@ -27,9 +28,13 @@ class Circle{
         const circle = this.object;
         this.posY += this.speedY;
         this.posX += Math.sin(now_time / 1000) * this.random_sin_mod;
+
         if (this.posY > this.vh){ this.posY = getRandomInt(-this.vw, -50); }
-        if (this.posX > this.vw){ this.posX = -50; }
+        if (this.posX > this.vw){ 
+            this.posX = -10;
+        }
         if (this.posX < -10){ this.posX = this.vw; }
+        this.posY -= (document.documentElement.scrollTop || document.body.scrollTop) - this.last_scroll;
 
         if (now_time - this.last_time > this.random_time){
             this.last_time = now_time;
@@ -39,8 +44,7 @@ class Circle{
 
         circle.style.left = this.posX + 'px';
         circle.style.top = this.posY + 'px';
-        //circle.style.width = "5px";
-        //circle.style.height = "5px";
+        this.last_scroll = document.documentElement.scrollTop || document.body.scrollTop;
 
     }
 }
@@ -48,7 +52,7 @@ function run_anim(){
     let table = document.getElementById('canvas');
     let vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
     let count = 30//Math.round(vw * vh / 10000);
-
+    table.style.display = "block";
 
     const date = new Date();
     let day = date.getDate();
@@ -58,7 +62,7 @@ function run_anim(){
         snow_btn.style.display = "none";
         return;
     }
-    if( localStorage.getItem("disable_snow")){
+    if( localStorage.getItem("disable_snow") ){
         return;
     }
 
@@ -67,21 +71,23 @@ function run_anim(){
         snowflake.innerHTML = "*";
         snowflake.className = "snowflake";
         table.appendChild(snowflake);
-        object_array.push(new Circle(snowflake))
+        object_array.push(new Circle(snowflake));
+        
     }
-
-    function tick(){
-        for (const snowflake of object_array){
-            snowflake.tick();
-        }
-    }
-
-    setInterval(tick, 16);
 }
+function tick(){
+    for (const snowflake of object_array){
+        snowflake.tick();
+    }
+}
+
+setInterval(tick, 16);
+
 
 function stop_anim(){
     object_array = [];
     let table = document.getElementById('canvas');
+    table.innerHTML = "";
     table.style.display = "none";
 }
 
