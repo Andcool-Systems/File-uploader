@@ -51,20 +51,18 @@ class Circle{
 function run_anim(){
     let table = document.getElementById('canvas');
     let vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
-    let count = 30//Math.round(vw * vh / 10000);
-    table.style.display = "block";
+    let count = 30
 
     const date = new Date();
     let day = date.getDate();
     let month = date.getMonth() + 1;
-    if (!((month == 12 && day > 20) || (month == 1 && day < 15)) || vw < 900) {
-        let snow_btn = document.getElementById('snow_btn');
-        snow_btn.style.display = "none";
-        return;
-    }
-    if( localStorage.getItem("disable_snow") ){
-        return;
-    }
+    if (!((month == 12 && day > 20) || (month == 1 && day < 5)) || vw < 900) return;
+    
+    if( localStorage.getItem("disable_snow"))return;
+    
+    let snow_btn = document.getElementById('snow_btn');
+    snow_btn.style.display = "block";
+    table.style.display = "block";
 
     for (let x = 0; x < count; x++){
         var snowflake = document.createElement("p");
