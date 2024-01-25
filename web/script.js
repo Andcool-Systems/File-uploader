@@ -62,8 +62,24 @@ function append_to_files_arr(data, id){
 		online.title = "Stored on local browser";
 	}
 
+	let a_btn = document.createElement("a");
+	a_btn.href = data['file_url_full'];
+	a_btn.className = "href_btn";
+	a_btn.target = "_blank";
+	a_btn.title = "Open in new tab";
+
+	let href_img = document.createElement("img");
+	href_img.src = "./res/external-link.png";
+
+	a_btn.appendChild(href_img);
+
 	let urls_div = document.createElement("div");
-	urls_div.appendChild(url);
+	let url_link_div = document.createElement("div");
+	url_link_div.className = "url_link_div";
+	url_link_div.appendChild(a_btn);
+	url_link_div.appendChild(url);
+
+	urls_div.appendChild(url_link_div);
 	urls_div.appendChild(filename);
 
 	creation_date_div.appendChild(cr_time);
@@ -76,7 +92,7 @@ function append_to_files_arr(data, id){
 
 async function get_new_tokens(accessToken){
 	try{
-		let response = await axios.post(api_url + "/api/refresh_token", {'accessToken': accessToken}, {})
+		let response = await axios.post(api_url + "/api/refresh_token", {'accessToken': "Bearer " + accessToken}, {})
 		if (!response) return false;
 		if (response.status != 200) return false;
 		return response.data.accessToken;

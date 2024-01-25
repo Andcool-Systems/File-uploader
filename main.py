@@ -2,7 +2,6 @@
 created by AndcoolSystems, 2023-2024
 """
 
-
 from fastapi import FastAPI, UploadFile, Request, Header
 from fastapi.responses import JSONResponse, FileResponse, Response
 from typing import Annotated, Union
@@ -41,6 +40,8 @@ app.add_middleware(  # Disable CORS
 
 file_life_time = 2_592_000  # File life time (unused)
 check_period = 86_400  # File check period (unused)
+
+
 
 
 @app.on_event("startup")
@@ -102,7 +103,7 @@ async def upload_file(file: UploadFile, request: Request, include_ext: bool = Fa
         saved_to_account = True
 
     key = str(uuid.uuid4())  # Generate unique delete key
-    ext = "." + file.filename.split(".")[-1]  # Get file extension
+    ext = "." + file.filename.split(".")[-1].lower()  # Get file extension
     fid = utils.generate_token(10) + (ext if include_ext else "")  # Generate file url
     fn = str(uuid.uuid4()) + ext   # Generate file name
 

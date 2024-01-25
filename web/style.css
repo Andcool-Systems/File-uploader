@@ -111,6 +111,7 @@ p{margin-left: 2px;}
     cursor: pointer;
     color: white;
     text-decoration: none;
+    word-wrap: break-word;
 }
 
 #files_table #url:hover{text-decoration: underline dashed;}
@@ -236,6 +237,18 @@ nav a:hover{
     transition: transform 0.3s ease-in-out;
 }
 
+.url_link_div{
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+}
+
+.href_btn{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1%;
+}
 @media(max-width: 425px){
     main{width: 90%;}
     h1{font-size: 130%;}
