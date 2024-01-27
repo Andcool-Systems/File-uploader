@@ -129,8 +129,9 @@ async function fetch_files(accessToken, len){
 		logim_page_btn.textContent = "Logout";
 		logim_page_btn.href = "/";
 		logim_page_btn.onclick = function() {if (confirm("Log out?")) {logout()}};
+		document.title = "File uploader · " + response.data.username;
 
-		document.getElementById('login_mess').style.display = "none";
+		document.getElementById('login_mess').textContent = "Logged as " + response.data.username;
 		let it = 0;
 		for (const file of response.data.data){
 			append_to_files_arr(file, len + it);

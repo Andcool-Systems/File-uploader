@@ -139,6 +139,7 @@ async def upload_file(file: UploadFile, request: Request, include_ext: bool = Fa
 
 
 @app.get("/file/{url}")  # Get file handler
+@app.get("/f/{url}")
 @limiter.limit(f"10/minute")
 async def send_file(url: str, request: Request):
     result = await db.file.find_first(where={"url": url})  # Get file by url
@@ -194,6 +195,7 @@ async def getFiles(request: Request,
         return JSONResponse(content={"status": "error", "auth_error": auth_error}, status_code=401)
     
     files = await db.file.find_many(where={"user_id": token_db.user_id})  # Get all user files from db
+    user = await db.user.find_first(where={"id": token_db.user_id})  # Get all user files from db
     files_response = []
     for file in files:
         files_response.append({
@@ -206,7 +208,7 @@ async def getFiles(request: Request,
             "craeted_at": file.craeted_at,
             "synced": True
         })
-    return JSONResponse(content={"status": "success", "message": "messages got successfully", "data": files_response}, status_code=200)
+    return JSONResponse(content={"status": "success", "message": "messages got successfully", "username": user.username, "data": files_response}, status_code=200)
 
 
 @app.post("/api/register")  # Registartion handler
