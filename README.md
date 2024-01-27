@@ -177,6 +177,7 @@ Retrieves a list of all files associated with this account.<br>
 {
     "status": "success",
     "message": "files got successfully",
+    "username": "My cool username",
     "data": [
         {
             "file_url": "4yn-8yjhsu",
