@@ -6,7 +6,7 @@ let api_url = "https://fu.andcool.ru";
 async function delete_file(data, id){
 	let confirmed = confirm("Delete it? It will be impossible to restore the file!");
 	if (confirmed){
-		let response = await axios.delete(api + "/api/delete/" + data.file_url + "?key=" + data.key);
+		let response = await axios.get(api + "/api/delete/" + data.file_url + "?key=" + data.key);
 		if (response.status == 200){
 			if (!data.synced){
 				let old_data = JSON.parse(localStorage.getItem("file_history") || "[]");

@@ -168,7 +168,7 @@ async def send_file(url: str, request: Request):
         return FileResponse(path=result.filename, filename=result.user_filename, media_type=result.type)  # Send file as FileResponse
 
 
-@app.delete("/api/delete/{url}")  # File delete handler
+@app.get("/api/delete/{url}")  # File delete handler
 async def delete_file(url: str, key: str = ""):
     result = await db.file.find_first(where={"url": url})  # Get file record by url
     if not result: return JSONResponse(content={"status": "error", "message": "File not found"}, status_code=200)  # if file does'n exists
@@ -185,6 +185,7 @@ async def delete_file(url: str, key: str = ""):
         return JSONResponse(content={"status": "success", "message": "deleted"}, status_code=200)
     else:  # If provided key doesn't matched with key from database record
         return JSONResponse(content={"status": "error", "message": "invalid unique key"}, status_code=400)
+
 
 @app.get("/api/getFiles")  # get files handler
 @limiter.limit(f"10/minute")

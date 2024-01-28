@@ -88,7 +88,7 @@ Upon successful execution, the API returns a `200` status code along with a JSON
 | 400        | Bad file extension             | The file does not have an extension      |
 | 413        | File size exceeds the limit (100MB) | The file size exceeds 100MB         |
 
-`DELETE /api/delete/<file_url>?key=<unique key>` — Deletes a file. <br>
+`GET /api/delete/<file_url>?key=<unique key>` — Deletes a file. <br>
 Successful execution returns a `200` status code, removing the file from the server.<br>
 
 #### Possible Errors
