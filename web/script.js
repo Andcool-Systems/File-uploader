@@ -45,7 +45,7 @@ function append_to_files_arr(data, id){
 	creation_date_div.id = "creation_date_div";
 
 	let cr_time = document.createElement("p");
-    cr_time.innerHTML = data['creation_date'];
+    cr_time.innerHTML = data['creation_date'] + " " + (!data['size'] || data['size'] == "0B"? "" : data['size']);
 	cr_time.id = "cr_time";
 
     const button = document.createElement('button');
@@ -114,7 +114,7 @@ async function fetch_files(accessToken, len){
 		localStorage.setItem("accessToken", new_access);
 	}
 	try{
-		let response = await axios.get(api_url + "/api/getFiles", {
+		let response = await axios.get(api_url + "/api/get_files", {
 			headers: {
 				'Authorization': 'Bearer ' + accessToken
 			}

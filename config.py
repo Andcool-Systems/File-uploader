@@ -30,3 +30,4 @@ filetypes = {
 default = "application/x-msdownload"
 
 accesLifeTime = 432_000
+accesLifeTimeBot = 15_552_000

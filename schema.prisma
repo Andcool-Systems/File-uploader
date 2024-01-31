@@ -21,6 +21,7 @@ model file {
   key           String  @default("")
   type          String  @default("")
   ext           String  @default("")
+  size          Int     @default(0)
   user_filename String  @default("")
   uses_number   Int     @default(0)
   max_uses      Int     @default(0)

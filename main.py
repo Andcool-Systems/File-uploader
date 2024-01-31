@@ -23,7 +23,25 @@ from dotenv import load_dotenv
 import jwt
 import bcrypt
 
-limiter = Limiter(key_func=get_remote_address)
+def custom_key_func(request: Request):
+    if get_remote_address(request) == os.getenv('SERVER_IP'):
+        return "bots"
+    return "user"
+
+
+def dynamic_limit_provider(key: str):
+    if key == "bots":
+        return "1000/minute"
+    return "10/minute"
+
+
+def dynamic_limit_provider_upload(key: str):
+    if key == "bots":
+        return "500/minute"
+    return "2/minute"
+
+
+limiter = Limiter(key_func=custom_key_func)
 app = FastAPI()
 db = Prisma()
 load_dotenv()
@@ -38,21 +56,17 @@ app.add_middleware(  # Disable CORS
     allow_headers=["*"],
 )
 
-file_life_time = 2_592_000  # File life time (unused)
-check_period = 86_400  # File check period (unused)
-
-
-
-
 @app.on_event("startup")
 async def startup_event():
     await db.connect()  # Connecting to database
     print("Connected to Data Base")
 
 
-"""@app.get("/favicon.ico")  # Favicon handler
-def get_favicon():
-    return FileResponse(path="1.png") """
+@app.get("/api")  # Get file handler
+@limiter.limit(dynamic_limit_provider)
+async def api(request: Request):
+    return JSONResponse(content={"status": "success", "message": "File uploader RESTful API", 
+                                 "docs": "https://github.com/Andcool-Systems/File-uploader/blob/main/README.md"}, status_code=200)
 
 
 async def check_token(Authorization):
@@ -68,18 +82,20 @@ async def check_token(Authorization):
     except jwt.exceptions.DecodeError:
         return None, {"message": "Invalid access token", "errorId": -4}
     
-    if token["ExpiresAt"] < time.time():  # If token expired
-        return None, {"message": "Access token expired", "errorId": -3}
-    
     token_db = await db.token.find_first(where={"accessToken": token_header[1]})  # Find token in db
+
     if not token_db:  # If not found
         return None, {"message": "Token not found", "errorId": -5}
+    
+    if token["ExpiresAt"] < time.time():  # If token expired
+        await db.token.delete(where={"id": token_db.id})
+        return None, {"message": "Access token expired", "errorId": -3}
     
     return token_db, {}
 
 
 @app.post("/api/upload")  # File upload handler
-@limiter.limit(f"2/minute")
+@limiter.limit(dynamic_limit_provider_upload)
 async def upload_file(file: UploadFile, request: Request, include_ext: bool = False, max_uses: int = 0, 
                       Authorization: Annotated[Union[str, None], Header(convert_underscores=False)] = None):
     if not file:  # Check, if the file is uploaded
@@ -121,6 +137,7 @@ async def upload_file(file: UploadFile, request: Request, include_ext: bool = Fa
         "key": key,
         "type": filetypes.get(ext[1:], default) if ext.lower()[1:] in filetypes else "download",
         "ext": ext,
+        "size": file.size,
         "user_filename": file.filename,
         "max_uses": max_uses
     })
@@ -132,6 +149,7 @@ async def upload_file(file: UploadFile, request: Request, include_ext: bool = Fa
                                  "file_url_full": "https://fu.andcool.ru/file/" + created.url,
                                  "key": created.key,
                                  "ext": created.ext,
+                                 "size": utils.calculate_size(file.size),
                                  "user_filename": user_filename,
                                  "craeted_at": created.craeted_at,
                                  "synced": saved_to_account,
@@ -140,7 +158,7 @@ async def upload_file(file: UploadFile, request: Request, include_ext: bool = Fa
 
 @app.get("/file/{url}")  # Get file handler
 @app.get("/f/{url}")
-@limiter.limit(f"10/minute")
+@limiter.limit(dynamic_limit_provider)
 async def send_file(url: str, request: Request):
     result = await db.file.find_first(where={"url": url})  # Get file by url
     if not result: 
@@ -188,7 +206,8 @@ async def delete_file(url: str, key: str = ""):
 
 
 @app.get("/api/getFiles")  # get files handler
-@limiter.limit(f"10/minute")
+@app.get("/api/get_files")  # get files handler
+@limiter.limit(dynamic_limit_provider)
 async def getFiles(request: Request,
                    Authorization: Annotated[Union[str, None], Header(convert_underscores=False)] = None):
     token_db, auth_error = await check_token(Authorization)  # Check token validity
@@ -207,14 +226,15 @@ async def getFiles(request: Request,
             "user_filename": file.user_filename,
             "creation_date": file.created_date,
             "craeted_at": file.craeted_at,
+            "size": utils.calculate_size(file.size),
             "synced": True
         })
     return JSONResponse(content={"status": "success", "message": "messages got successfully", "username": user.username, "data": files_response}, status_code=200)
 
 
 @app.post("/api/register")  # Registartion handler
-@limiter.limit(f"10/minute")
-async def register(request: Request):
+@limiter.limit(dynamic_limit_provider)
+async def register(request: Request, bot: bool = False):
     body = await request.json()
     if "username" not in body or \
         "password" not in body:  # If request body doesn't have username and password field
@@ -234,7 +254,7 @@ async def register(request: Request):
             "password": str(hashed.decode('utf-8'))
         }
     )
-    access = jwt.encode({"user_id": int(user.id), "ExpiresAt": time.time() + accesLifeTime}, 
+    access = jwt.encode({"user_id": int(user.id), "ExpiresAt": time.time() + (accesLifeTime if not bot else accesLifeTimeBot)}, 
                         "accessTokenSecret", algorithm="HS256")  # Generate token
 
     await db.token.create({  # Create token record in db
@@ -249,8 +269,8 @@ async def register(request: Request):
 
 
 @app.post("/api/login")  # login handler
-@limiter.limit(f"10/minute")
-async def login(request: Request):
+@limiter.limit(dynamic_limit_provider)
+async def login(request: Request, bot: bool = False):
     body = await request.json()
     if "username" not in body or \
         "password" not in body:  # If request body doesn't have username and password field
@@ -261,7 +281,7 @@ async def login(request: Request):
         return JSONResponse({"status": "error", "message": "User not found", "errorId": 4}, status_code=404)
 
     if bcrypt.checkpw(bytes(body["password"], "utf-8"), bytes(user.password, "utf-8")):  # If password is correct
-        access = jwt.encode({"user_id": int(user.id), "ExpiresAt": time.time() + accesLifeTime}, "accessTokenSecret", algorithm="HS256")
+        access = jwt.encode({"user_id": int(user.id), "ExpiresAt": time.time() + (accesLifeTime if not bot else accesLifeTimeBot)}, "accessTokenSecret", algorithm="HS256")
         if len(user.tokens) > 10:  # If user have more than 10 tokens
             await db.token.delete_many(where={"user_id": user.id})
             
@@ -282,7 +302,7 @@ async def login(request: Request):
 
 
 @app.post("/api/refresh_token")  # refresh token handler
-@limiter.limit(f"10/minute")
+@limiter.limit(dynamic_limit_provider)
 async def login(request: Request):
     body = await request.json()
     if "accessToken" not in body:  # If token doesn't provided
@@ -303,7 +323,7 @@ async def login(request: Request):
 
 
 @app.post("/api/logout")  # logout handler
-@limiter.limit(f"10/minute")
+@limiter.limit(dynamic_limit_provider)
 async def login(request: Request,
                 Authorization: Annotated[Union[str, None], Header(convert_underscores=False)] = None):
     
