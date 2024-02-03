@@ -2,26 +2,7 @@
 created by AndcoolSystems, 2023-2024
 """
 
-from fastapi import FastAPI, UploadFile, Request, Header
-from fastapi.responses import JSONResponse, FileResponse, Response
-from typing import Annotated, Union
-import uvicorn
-from config import *
-import aiohttp
-import utils
-from slowapi.errors import RateLimitExceeded
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from fastapi.middleware.cors import CORSMiddleware
-import time
-import aiofiles
-from prisma import Prisma
-import uuid
-import os
-from datetime import datetime
-from dotenv import load_dotenv
-import jwt
-import bcrypt
+from imports import *
 
 def custom_key_func(request: Request):
     if get_remote_address(request) == os.getenv('SERVER_IP'):
@@ -46,7 +27,7 @@ app = FastAPI()
 db = Prisma()
 load_dotenv()
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 app.add_middleware(  # Disable CORS
     CORSMiddleware,
@@ -62,7 +43,7 @@ async def startup_event():
     print("Connected to Data Base")
 
 
-@app.get("/api")  # Get file handler
+@app.get("/api") # root api endpoint
 @limiter.limit(dynamic_limit_provider)
 async def api(request: Request):
     return JSONResponse(content={"status": "success", "message": "File uploader RESTful API", 
@@ -82,7 +63,7 @@ async def check_token(Authorization):
     except jwt.exceptions.DecodeError:
         return None, {"message": "Invalid access token", "errorId": -4}
     
-    token_db = await db.token.find_first(where={"accessToken": token_header[1]})  # Find token in db
+    token_db = await db.token.find_first(where={"accessToken": token_header[1]}, include={"user": True})  # Find token in db
 
     if not token_db:  # If not found
         return None, {"message": "Token not found", "errorId": -5}
@@ -110,8 +91,8 @@ async def upload_file(file: UploadFile, request: Request, include_ext: bool = Fa
     if max_uses > 10000:
         return JSONResponse(content={"status": "error", "message": "Invalid max_uses parameter"}, status_code=400)
     
-    user_id = -1
     saved_to_account = False
+    user_id = -1
 
     token_db, auth_error = await check_token(Authorization)  # Check token
     if token_db:  # If token is okay
@@ -212,18 +193,19 @@ async def getFiles(request: Request,
                    Authorization: Annotated[Union[str, None], Header(convert_underscores=False)] = None):
     token_db, auth_error = await check_token(Authorization)  # Check token validity
     if not token_db:  # If token is not valid
-        return JSONResponse(content={"status": "error", "auth_error": auth_error}, status_code=401)
+        return JSONResponse(content={"status": "error", "message": "Auth error", "auth_error": auth_error}, status_code=401)
     
     files = await db.file.find_many(where={"user_id": token_db.user_id})  # Get all user files from db
     user = await db.user.find_first(where={"id": token_db.user_id})  # Get all user files from db
     files_response = []
     for file in files:
+        user_filename = file.user_filename[:50] + ("..."  if len(file.user_filename) > 50 else "")
         files_response.append({
             "file_url": file.url,
             "file_url_full": "https://fu.andcool.ru/file/" + file.url,
             "key": file.key,
             "ext": file.ext,
-            "user_filename": file.user_filename,
+            "user_filename": user_filename,
             "creation_date": file.created_date,
             "craeted_at": file.craeted_at,
             "size": utils.calculate_size(file.size),
@@ -310,7 +292,7 @@ async def login(request: Request):
     
     token_db, auth_error = await check_token(body["accessToken"])  # Check token validity
     if not token_db:  # If token is not valid
-        return JSONResponse(content={"status": "error", "auth_error": auth_error}, status_code=401)
+        return JSONResponse(content={"status": "error", "message": "Auth error", "auth_error": auth_error}, status_code=401)
     
     access = jwt.encode({"user_id": int(token_db.user_id), "ExpiresAt": time.time() + accesLifeTime}, 
                         "accessTokenSecret", algorithm="HS256")  # Generate new token
@@ -329,12 +311,244 @@ async def login(request: Request,
     
     token_db, auth_error = await check_token(Authorization)  # Check token validity
     if not token_db:  # If token is not valid
-        return JSONResponse(content={"status": "error", "auth_error": auth_error}, status_code=401)
+        return JSONResponse(content={"status": "error", "message": "Auth error", "auth_error": auth_error}, status_code=401)
 
     await db.token.delete(where={"id": token_db.id})  # Delete token record from db
 
     return {"status": "success", 
             "message": "logged out"}
+
+
+@app.post("/api/transfer")  # logout handler
+@limiter.limit(dynamic_limit_provider)
+async def transfer(request: Request,
+                Authorization: Annotated[Union[str, None], Header(convert_underscores=False)] = None):
+    
+    token_db, auth_error = await check_token(Authorization)  # Check token validity
+    if not token_db:  # If token is not valid
+        return JSONResponse(content={"status": "error", "message": "Auth error", "auth_error": auth_error}, status_code=401)
+    
+    try:
+        body = await request.json()
+    except:
+        return JSONResponse(content={"status": "error", "message": "Couldn't parse request body"}, status_code=400)
+    
+    if "data" not in body:
+        return JSONResponse(content={"status": "error", "message": "No `data` field in request body"}, status_code=400)
+    
+    non_success = []
+    for requested_file in body["data"]:
+        try:
+            file = await db.file.find_first(where={"url": requested_file["file_url"]})
+            if not file or file.key != requested_file["key"]:
+                non_success.append(requested_file)
+                continue
+
+            await db.file.update(where={"id": file.id}, data={"user_id": token_db.user_id})
+        except:
+            non_success.append(requested_file)
+
+    return {"status": "success", 
+            "message": "transfered",
+            "unsuccess": non_success}
+
+
+# --------------------------------------Groups------------------------------------------
+
+@app.post("/api/create_group")  # create_group handler
+@limiter.limit(dynamic_limit_provider)
+async def create_group(request: Request,
+                        Authorization: Annotated[Union[str, None], Header(convert_underscores=False)] = None):
+    
+    body = await request.json()
+    if "group_name" not in body:  # If token doesn't provided
+        return JSONResponse({"status": "error", "message": "No `group_name` provided"}, status_code=400)
+    
+    token_db, auth_error = await check_token(Authorization)  # Check token validity
+    if not token_db:  # If token is not valid
+        return JSONResponse(content={"status": "error", "message": "Auth error", "auth_error": auth_error}, status_code=401)
+    
+    group = await db.group.create(data={
+                                "name": body["group_name"],
+                                "group_id": random.randint(10000000, 99999999),
+                                "admin_id": token_db.user_id,
+                                "invite_string": utils.generate_token(15),
+                                'members': {
+                                    'connect': {
+                                        'id': token_db.user_id
+                                    },
+                                }
+                            })
+    return {"status": "success",
+            "message": "created",
+            "name": group.name,
+            "invite_string": group.invite_string,
+            "group_id": group.group_id}
+
+
+@app.delete("/api/delete_group/{group_id}")  # delete_group handler
+@limiter.limit(dynamic_limit_provider)
+async def delete_group(group_id: int, request: Request,
+                        Authorization: Annotated[Union[str, None], Header(convert_underscores=False)] = None):
+    
+    token_db, auth_error = await check_token(Authorization)  # Check token validity
+    if not token_db:  # If token is not valid
+        return JSONResponse(content={"status": "error", "message": "Auth error", "auth_error": auth_error}, status_code=401)
+    
+    group = await db.group.find_first(where={"group_id": group_id})
+    if not group:
+        return JSONResponse({"status": "error", "message": "Group not found"}, status_code=404)
+    
+    if group.admin_id != token_db.user_id:
+        return JSONResponse({"status": "error", "message": "You dont have any permissions to delete this group"}, status_code=403)
+    
+    await db.group.delete(where={"id": group.id})
+
+    return {"status": "success",
+            "message": "deleted"}
+
+
+@app.post("/api/join/{invite_link}")  # join handler
+@limiter.limit(dynamic_limit_provider)
+async def delete_group(invite_link: str, request: Request,
+                        Authorization: Annotated[Union[str, None], Header(convert_underscores=False)] = None):
+
+    token_db, auth_error = await check_token(Authorization)  # Check token validity
+    if not token_db:  # If token is not valid
+        return JSONResponse(content={"status": "error", "message": "Auth error", "auth_error": auth_error}, status_code=401)
+    
+    group = await db.group.find_first(where={"invite_string": invite_link}, include={"members": True})
+    if not group:
+        return JSONResponse({"status": "error", "message": "Invite link not found"}, status_code=404)
+    
+    if token_db.user in group.members:
+        return JSONResponse({"status": "error", "message": "You are already in the group"}, status_code=400)
+    
+    await db.group.update(data={'members': {
+                                    'connect': {
+                                        'id': token_db.user_id
+                                    },
+                                }
+                                },
+                          
+                          where={"id": group.id}
+                        )
+    
+    return {"status": "success",
+            "message": "Joined",
+            "name": group.name,
+            "invite_string": group.invite_string,
+            "group_id": group.group_id}
+
+
+@app.post("/api/leave/{group_id}")  # leave handler
+@limiter.limit(dynamic_limit_provider)
+async def delete_group(group_id: int, request: Request,
+                        Authorization: Annotated[Union[str, None], Header(convert_underscores=False)] = None):
+
+    token_db, auth_error = await check_token(Authorization)  # Check token validity
+    if not token_db:  # If token is not valid
+        return JSONResponse(content={"status": "error", "message": "Auth error", "auth_error": auth_error}, status_code=401)
+    
+    group = await db.group.find_first(where={"group_id": group_id}, include={"members": True})
+    if not group:
+        return JSONResponse({"status": "error", "message": "Group not found"}, status_code=404)
+    
+    if token_db.user not in group.members:
+        return JSONResponse({"status": "error", "message": "You are not in the group"}, status_code=400)
+    
+    await db.group.update(data={'members': {'disconnect': {'id': token_db.user_id}}}, where={"id": group.id})
+    
+    return {"status": "success",
+            "message": "leaved"}
+
+
+@app.post("/api/group/{group_id}/upload")  # leave handler
+@limiter.limit(dynamic_limit_provider)
+async def upload_group(group_id: int, file: UploadFile, request: Request, include_ext: bool = False, max_uses: int = 0, 
+                      Authorization: Annotated[Union[str, None], Header(convert_underscores=False)] = None):
+
+    token_db, auth_error = await check_token(Authorization)  # Check token validity
+    if not token_db:  # If token is not valid
+        return JSONResponse(content={"status": "error", "message": "Auth error", "auth_error": auth_error}, status_code=401)
+    
+    group = await db.group.find_first(where={"group_id": group_id}, include={"members": True})
+    if not group:
+        return JSONResponse({"status": "error", "message": "Group not found"}, status_code=404)
+    
+    if token_db.user not in group.members:
+        return JSONResponse({"status": "error", "message": "You are not in the group"}, status_code=400)
+    
+    if not file:  # Check, if the file is uploaded
+        return JSONResponse(content={"status": "error", "message": "No file uploaded"}, status_code=400) 
+
+    if file.filename.find(".") == -1:  # Check, if the file has a extension
+        return JSONResponse(content={"status": "error", "message": "Bad file extension"}, status_code=400)
+
+    if file.size > 100 * 1024 * 1024:   # 100MB limit
+        return JSONResponse(content={"status": "error", "message": "File size exceeds the limit (100MB)"}, status_code=413)
+    
+    if max_uses > 10000:
+        return JSONResponse(content={"status": "error", "message": "Invalid max_uses parameter"}, status_code=400)
+
+    key = str(uuid.uuid4())  # Generate unique delete key
+    ext = "." + file.filename.split(".")[-1].lower()  # Get file extension
+    fid = utils.generate_token(10) + (ext if include_ext else "")  # Generate file url
+    fn = str(uuid.uuid4()) + ext   # Generate file name
+
+    async with aiofiles.open(f"uploads/{fn}", "wb") as f:  # Save file locally
+        await f.write(file.file.read())
+
+    now = datetime.now()
+    created = await db.file.create({  # Creating a file record
+        "user_id": group.group_id * -1,
+        "created_date": f"{now.day}.{now.month}.{now.year} {now.hour}:{now.minute}:{now.second}",
+        "url": fid,
+        "filename": f"uploads/{fn}",
+        "craeted_at": time.time(),
+        "last_watched": time.time(),
+        "key": key,
+        "type": filetypes.get(ext[1:], default) if ext.lower()[1:] in filetypes else "download",
+        "ext": ext,
+        "size": file.size,
+        "user_filename": file.filename,
+        "max_uses": max_uses
+    })
+
+    user_filename = created.user_filename[:50] + ("..."  if len(created.user_filename) > 50 else "")
+    return JSONResponse(content={"status": "success", 
+                                 "message": "File uploaded successfully", 
+                                 "file_url": created.url,
+                                 "file_url_full": "https://fu.andcool.ru/file/" + created.url,
+                                 "key": created.key,
+                                 "ext": created.ext,
+                                 "size": utils.calculate_size(file.size),
+                                 "user_filename": user_filename,
+                                 "craeted_at": created.craeted_at,
+                                 "synced": False,
+                                 "auth_error": auth_error}, status_code=200)
+
+
+@app.get("/api/get_groups")  # leave handler
+@limiter.limit(dynamic_limit_provider)
+async def get_groups(request: Request, Authorization: Annotated[Union[str, None], Header(convert_underscores=False)] = None):
+    
+    token_db, auth_error = await check_token(Authorization)  # Check token validity
+    if not token_db:  # If token is not valid
+        return JSONResponse(content={"status": "error", "message": "Auth error", "auth_error": auth_error}, status_code=401)
+    
+    user = await db.user.find_first(where={"id": token_db.user_id}, include={"groups": True})
+    groups = []
+    for group in user.groups:
+        groups.append({
+            "name": group.name,
+            "group_id": group.group_id,
+            "invite_string": group.invite_string
+        })
+
+    return {"status": "success",
+            "message": "groups got successfully", 
+            "groups": groups}
 
 
 if __name__ == "__main__":  # Start program

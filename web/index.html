@@ -9,7 +9,7 @@
         <link rel="stylesheet" href="style.css">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <script src="login/script.js"></script>
-        <script src="script.js"></script>
+        <script src="api.js"></script>
         <script src="snowflakes.js"></script>
     </head>
     <script>
@@ -36,6 +36,9 @@
                 stop_anim();
             }
         }
+        //const urlParams = new URLSearchParams(window.location.search);
+        //const myParam = urlParams.get('myParam');
+        //console.log(myParam);
     </script>
     <button onclick="change_snow()" id="snow_btn" title="Switch snow">*</button>
     <div id="canvas">
@@ -72,6 +75,12 @@
                        <span>Choose file</span>
                  </label>
             </form>
+            
+            <p style="margin-bottom: 0%;">Select file group:</p>
+            <select name="hero[]" id="groups">
+                <option selected value="private">Private</option>
+            
+            </select>
             <p id="load_mess"></p>
             <table id="files_table">
             </table>

@@ -67,7 +67,7 @@ p{margin-left: 2px;}
 #files_table tbody{width: 100%;}
 
 
-#files_table tr{
+#files_table .tr{
     display: flex;
     position: relative;
 	outline: none;
@@ -83,7 +83,7 @@ p{margin-left: 2px;}
     margin-bottom: 2%;
 }
 
-#files_table button{
+#files_table .button{
     cursor: pointer;
     background-color: #222222;
     color:#eeeeee;
@@ -255,6 +255,26 @@ nav a:hover{
     justify-content: center;
     margin-right: 1%;
 }
+
+#transfer_row{
+    border: none;
+}
+
+#trensfer{
+    margin-bottom: 3%;
+    margin-left: 0;
+    cursor: pointer;
+    background-color: #222222;
+    color:#eeeeee;
+    font-family: 'Roboto Mono', monospace;
+    font-weight: 400;
+    font-size: 80%;
+    border: 2px rgb(105, 105, 105) solid;
+    border-radius: 10px;
+    padding: 5px;
+    font-weight: 400;
+    transition: background-color 0.2s;
+}
 @media(max-width: 425px){
     main{width: 90%;}
     h1{font-size: 130%;}
@@ -264,12 +284,12 @@ nav a:hover{
         padding: 7px;
         border-radius: 10px;
     }
-    #files_table tr{padding: 2%; flex-wrap: wrap;}
+    #files_table .tr{padding: 2%; flex-wrap: wrap;}
     #files_table p{font-size: 70%; margin: 0; word-break: break-all;}
-    #files_table button{font-size: 70%; padding: 7px; margin: 0}
+    #files_table .button{font-size: 70%; padding: 7px; margin: 0}
     #files_table #url{font-size: 70%;}
     #addit_sett{padding-left: 2%; margin-bottom: 3%;}
     #addit_sett_btn{margin-bottom: 3%;}
     .add_label{font-size: 80%;}
-    #files_table tr {flex-direction: column; align-items: flex-start;}
+    #files_table .tr {flex-direction: column; align-items: flex-start;}
 }

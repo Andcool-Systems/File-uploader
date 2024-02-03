@@ -1,7 +1,8 @@
 let api_upload_url = "/api/upload";
 let api_file_url = "/file/";
-let api_url = "https://fu.andcool.ru";
-//let api_url = "http://127.0.0.1:8080";
+//let api_url = "https://fu.andcool.ru";
+let api_url = "http://127.0.0.1:8080";
+let groups = [];
 
 async function delete_file(data, id){
 	let confirmed = confirm("Delete it? It will be impossible to restore the file!");
@@ -25,6 +26,7 @@ function append_to_files_arr(data, id){
   	// Insert a row at the start of table
   	let newRow = table.insertRow(0);
 	newRow.id = "row_" + id;
+	newRow.className = "tr";
 
   	// Insert a cell at the end of the row
   	let newCell = newRow.insertCell();
@@ -50,6 +52,7 @@ function append_to_files_arr(data, id){
 
     const button = document.createElement('button');
     button.innerHTML = 'Delete';
+	button.className = "button"
 	button.onclick = function(){delete_file(data, id);}
 
 	let online = document.createElement("img");
@@ -90,6 +93,7 @@ function append_to_files_arr(data, id){
     newCell2.appendChild(button);
 }
 
+
 async function get_new_tokens(accessToken){
 	try{
 		let response = await axios.post(api_url + "/api/refresh_token", {'accessToken': "Bearer " + accessToken}, {})
@@ -98,6 +102,91 @@ async function get_new_tokens(accessToken){
 		return response.data.accessToken;
 	}catch{
 		return false;
+	}
+}
+
+
+async function transfer_func(){
+	accessToken = localStorage.getItem("accessToken");
+	if (!accessToken) return [];
+	if (!checkAccess(accessToken)){
+		let new_access = await get_new_tokens(accessToken);
+		if (!new_access){
+			localStorage.removeItem("accessToken");
+			return [];
+		}
+		console.log(new_access);
+		accessToken = new_access;
+		localStorage.setItem("accessToken", new_access);
+	}
+	try{
+		let response = await axios.post(api_url + "/api/transfer", {'data': JSON.parse(localStorage.getItem("file_history") || "[]")}, {
+			headers: {
+				'Authorization': 'Bearer ' + accessToken
+			}
+		})
+		if (!response) return;
+		if (response.status == 200){
+			localStorage.setItem("file_history", JSON.stringify(response.data.unsuccess));
+			location.reload();
+		}
+		
+
+	}catch (e){
+		console.log(e);
+		if (e.response.status == 401){
+			localStorage.removeItem("accessToken");
+			return [];
+		}
+		return [];
+	}
+}
+
+async function fetch_groups(){
+	let accessToken = localStorage.getItem("accessToken");
+	if (!accessToken) return [];
+	if (!checkAccess(accessToken)){
+		let new_access = await get_new_tokens(accessToken);
+		if (!new_access){
+			localStorage.removeItem("accessToken");
+			return [];
+		}
+		console.log(new_access);
+		accessToken = new_access;
+		localStorage.setItem("accessToken", new_access);
+	}
+	try{
+		let response = await axios.get(api_url + "/api/get_groups", {
+			headers: {
+				'Authorization': 'Bearer ' + accessToken
+			}
+		})
+		if (!response) return;
+
+		/*let logim_page_btn = document.getElementById('login_page_a');
+		logim_page_btn.textContent = "Logout";
+		logim_page_btn.href = "/";
+		logim_page_btn.onclick = function() {if (confirm("Log out?")) {logout()}};
+		document.title = "File uploader · " + response.data.username;
+
+		document.getElementById('login_mess').textContent = "Logged as " + response.data.username;*/
+
+		let groups = document.getElementById('groups');
+
+		for (const group of response.data.groups){
+			let groupel = document.createElement("option");
+			groupel.innerHTML = group.name;
+			groupel.value = group.group_id;
+			groups.appendChild(groupel);
+		}
+
+	}catch (e){
+		console.log(e);
+		if (e.response.status == 401){
+			localStorage.removeItem("accessToken");
+			return [];
+		}
+		return [];
 	}
 }
 
@@ -120,10 +209,6 @@ async function fetch_files(accessToken, len){
 			}
 		})
 		if (!response) return;
-		if (response.status == 401){
-			localStorage.removeItem("accessToken");
-			return [];
-		}
 
 		let logim_page_btn = document.getElementById('login_page_a');
 		logim_page_btn.textContent = "Logout";
@@ -132,14 +217,33 @@ async function fetch_files(accessToken, len){
 		document.title = "File uploader · " + response.data.username;
 
 		document.getElementById('login_mess').textContent = "Logged as " + response.data.username;
+
+		let table = document.getElementById('files_table');
+
+		// Insert a row at the start of table
+		let newRow = table.insertRow(0);
+		newRow.id = "transfer_row";
+		// Insert a cell at the end of the row
+		let newCell = newRow.insertCell();
+		// Append a text node to the cell
+		let transfer = document.createElement("button");
+		transfer.id = "trensfer";
+		transfer.innerHTML = "Transfer local files to an account"
+		transfer.onclick = function(){if (confirm("Transfer local files to an active account?")) transfer_func()}
+		if (len > 0) newCell.appendChild(transfer);
+
 		let it = 0;
 		for (const file of response.data.data){
 			append_to_files_arr(file, len + it);
 			it++;
 		}
 
-	}catch{
-		localStorage.removeItem("accessToken");
+	}catch (e){
+		console.log(e);
+		if (e.response.status == 401){
+			localStorage.removeItem("accessToken");
+			return [];
+		}
 		return [];
 	}
 }
@@ -216,6 +320,7 @@ addEventListener("DOMContentLoaded", (event) => {
 			it++;
 		}
 	}
+	fetch_groups();
 	fetch_files(localStorage.getItem("accessToken"), file_history.length);
 
 

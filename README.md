@@ -39,13 +39,13 @@ This section will be referred to as `1.1` in the documentation.
 
 **List of errors:** 
 
-| errorId | message                                               | Reasons                                       |
-| ------- | ----------------------------------------------------- | --------------------------------------------- |
-| -1      | No Authorization header provided                      | The request is missing the `Authorization` header |
+| errorId | message                                               | Reasons                                             |
+| ------- | ----------------------------------------------------- | --------------------------------------------------- |
+| -1      | No Authorization header provided                      | The request is missing the `Authorization` header   |
 | -2      | Authorization header must have `Bearer <token>` format | The `Authorization` header has an incorrect format |
-| -3      | Access token expired                                  | The token has expired                          |
-| -4      | Invalid access token                                  | The token cannot be decrypted                 |
-| -5      | Token not found                                       | The token is not found                        |
+| -3      | Access token expired                                  | The token has expired                               |
+| -4      | Invalid access token                                  | The token cannot be decrypted                       |
+| -5      | Token not found                                       | The token is not found                              |
 
 ### 1.2 Basic API
 
@@ -56,8 +56,8 @@ If the file type cannot be determined, the API returns the file in download mode
 
 #### Possible Errors
 
-| Error Code | Description                   | Possible Reasons                          |
-| ---------- | ----------------------------- | ------------------------------------------ |
+| Error Code | Description                   | Possible Reasons                               |
+| ---------- | ----------------------------- | -----------------------------------------------|
 | 404        | File not found                | The file referenced by the code does not exist |
 
 ### Upload a file to the server
@@ -122,7 +122,7 @@ Both requests accept the same request body but have different errors.
 
 ```json
 {
-    "username": "Andcool",
+    "username": "My cool username",
     "password": "My cool password"
 }
 ```
@@ -168,7 +168,7 @@ Successful execution returns a `200` HTTP code along with the `accessToken` fiel
 #### Possible Errors
 
 | errorId | HTTP code | message                     | Reasons                                           |
-| ------- | ----------|-----------------------------| ------------------------------------------------  |
+| ------- | ----------|-----------------------------| ------------------------------------------------- |
 | 5       | 400       | No access token provided    | The `accessToken` field is missing in the request |
 
 Errors described in section `1.1` may also occur.  
