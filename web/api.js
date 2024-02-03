@@ -32,12 +32,10 @@ function append_to_files_arr(data, id){
   	let newCell = newRow.insertCell();
     let newCell2 = newRow.insertCell();
     // Append a text node to the cell
-    let url = document.createElement("a");
+    let url = document.createElement("p");
     url.innerHTML = data['file_url_full'];
 	url.id = "url";
 	url.onclick = function(){navigator.clipboard.writeText(data['file_url_full']);}
-	//url.href = data['file_url_full'];
-	//url.target = "_blank";
 
 	let filename = document.createElement("p");
     filename.innerHTML = data['user_filename'];
@@ -84,7 +82,7 @@ function append_to_files_arr(data, id){
 
 	urls_div.appendChild(url_link_div);
 	urls_div.appendChild(filename);
-
+	
 	creation_date_div.appendChild(cr_time);
 	creation_date_div.appendChild(online);
 	urls_div.appendChild(creation_date_div);
@@ -163,16 +161,7 @@ async function fetch_groups(){
 		})
 		if (!response) return;
 
-		/*let logim_page_btn = document.getElementById('login_page_a');
-		logim_page_btn.textContent = "Logout";
-		logim_page_btn.href = "/";
-		logim_page_btn.onclick = function() {if (confirm("Log out?")) {logout()}};
-		document.title = "File uploader · " + response.data.username;
-
-		document.getElementById('login_mess').textContent = "Logged as " + response.data.username;*/
-
 		let groups = document.getElementById('groups');
-
 		for (const group of response.data.groups){
 			let groupel = document.createElement("option");
 			groupel.innerHTML = group.name;
@@ -190,7 +179,7 @@ async function fetch_groups(){
 	}
 }
 
-async function fetch_files(accessToken, len){
+async function fetch_files(accessToken, group){
 	if (!accessToken) return [];
 	if (!checkAccess(accessToken)){
 		let new_access = await get_new_tokens(accessToken);
@@ -203,7 +192,7 @@ async function fetch_files(accessToken, len){
 		localStorage.setItem("accessToken", new_access);
 	}
 	try{
-		let response = await axios.get(api_url + "/api/get_files", {
+		let response = await axios.get(api_url + "/api/get_files/" + group, {
 			headers: {
 				'Authorization': 'Bearer ' + accessToken
 			}
@@ -218,20 +207,29 @@ async function fetch_files(accessToken, len){
 
 		document.getElementById('login_mess').textContent = "Logged as " + response.data.username;
 
+		let len = 0;
 		let table = document.getElementById('files_table');
-
-		// Insert a row at the start of table
-		let newRow = table.insertRow(0);
-		newRow.id = "transfer_row";
-		// Insert a cell at the end of the row
-		let newCell = newRow.insertCell();
-		// Append a text node to the cell
-		let transfer = document.createElement("button");
-		transfer.id = "trensfer";
-		transfer.innerHTML = "Transfer local files to an account"
-		transfer.onclick = function(){if (confirm("Transfer local files to an active account?")) transfer_func()}
-		if (len > 0) newCell.appendChild(transfer);
-
+			table.innerHTML = "";
+		if (group == "private"){
+			let file_history = JSON.parse(localStorage.getItem("file_history") || "[]");
+			if (file_history != []){
+				for (const file of file_history){
+					append_to_files_arr(file, len);
+					len++;
+				}
+			}
+			// Insert a row at the start of table
+			let newRow = table.insertRow(0);
+			newRow.id = "transfer_row";
+			// Insert a cell at the end of the row
+			let newCell = newRow.insertCell();
+			// Append a text node to the cell
+			let transfer = document.createElement("button");
+			transfer.id = "trensfer";
+			transfer.innerHTML = "Transfer local files to an account"
+			transfer.onclick = function(){if (confirm("Transfer local files to an active account?")) transfer_func()}
+			if (len > 0) newCell.appendChild(transfer);
+		}
 		let it = 0;
 		for (const file of response.data.data){
 			append_to_files_arr(file, len + it);
@@ -268,14 +266,13 @@ async function logout(){
 				'Authorization': 'Bearer ' + accessToken
 			}
 		})
-		if (!response) return;
+		if (!response) return [];
 		if (response.status == 401 || response.status == 200){
 			localStorage.removeItem("accessToken");
 
 			let logim_page_btn = document.getElementById('login_page_a');
 			logim_page_btn.textContent = "Login";
 			logim_page_btn.href = "https://fu.andcool.ru/login/";
-
 		}
 	}catch{
 		localStorage.removeItem("accessToken");
@@ -284,6 +281,10 @@ async function logout(){
 }
 
 addEventListener("DOMContentLoaded", (event) => {
+	document.getElementById('groups').addEventListener("change", (event) => {
+																			fetch_files(localStorage.getItem("accessToken"),
+																			event.target.value);
+																		});
 	document.getElementById('input_file').addEventListener('change', function(e) {
 		let fileInput = document.getElementById('input_file');
 		let load_mess = document.getElementById('load_mess');
@@ -312,17 +313,8 @@ addEventListener("DOMContentLoaded", (event) => {
 		}
 	});
 
-	let file_history = JSON.parse(localStorage.getItem("file_history") || "[]");
-	if (file_history != []){
-		let it = 0;
-		for (const file of file_history){
-			append_to_files_arr(file, it);
-			it++;
-		}
-	}
 	fetch_groups();
-	fetch_files(localStorage.getItem("accessToken"), file_history.length);
-
+	fetch_files(localStorage.getItem("accessToken"), document.getElementById('groups').value);
 
 	let dropContainer = document.getElementById('dropContainer')
 	dropContainer.ondragover = dropContainer.ondragenter = function(evt) {

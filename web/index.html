@@ -7,6 +7,9 @@
         <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@800&family=Roboto+Mono&display=swap" rel="stylesheet">
         <link rel="icon" href="/favicon.ico" type="image/x-icon">
         <link rel="stylesheet" href="style.css">
+        <link rel="preload" as="image" href="./res/globe_on.png">
+        <link rel="preload" as="image" href="./res/globe_off.png">
+        <link rel="preload" as="image" href="./res/external-link.png">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <script src="login/script.js"></script>
         <script src="api.js"></script>
@@ -77,7 +80,7 @@
             </form>
             
             <p style="margin-bottom: 0%;">Select file group:</p>
-            <select name="hero[]" id="groups">
+            <select id="groups">
                 <option selected value="private">Private</option>
             
             </select>

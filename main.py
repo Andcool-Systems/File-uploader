@@ -186,17 +186,31 @@ async def delete_file(url: str, key: str = ""):
         return JSONResponse(content={"status": "error", "message": "invalid unique key"}, status_code=400)
 
 
-@app.get("/api/getFiles")  # get files handler
-@app.get("/api/get_files")  # get files handler
+@app.get("/api/getFiles/{group_id}")  # get files handler
+@app.get("/api/get_files/{group_id}")  # get files handler
 @limiter.limit(dynamic_limit_provider)
-async def getFiles(request: Request,
+async def getFiles(group_id: str, request: Request,
                    Authorization: Annotated[Union[str, None], Header(convert_underscores=False)] = None):
     token_db, auth_error = await check_token(Authorization)  # Check token validity
     if not token_db:  # If token is not valid
         return JSONResponse(content={"status": "error", "message": "Auth error", "auth_error": auth_error}, status_code=401)
     
-    files = await db.file.find_many(where={"user_id": token_db.user_id})  # Get all user files from db
-    user = await db.user.find_first(where={"id": token_db.user_id})  # Get all user files from db
+    user = await db.user.find_first(where={"id": token_db.user_id})  # Get user files from db
+
+    if group_id == "private":
+        user_id = user.id 
+    else:
+        if not group_id.isnumeric():
+            return JSONResponse(content={"status": "error", "message": "Invalid group id"}, status_code=400)
+        
+        group = await db.group.find_first(where={"group_id": group_id}, include={"members": True})
+        if not group:
+            return JSONResponse(content={"status": "error", "message": "Group not found"}, status_code=404)
+        if user not in group.members:
+            return JSONResponse({"status": "error", "message": "You are not in the group"}, status_code=400)
+        
+        user_id = -int(group_id) 
+    files = await db.file.find_many(where={"user_id": user_id})  # Get all user files from db
     files_response = []
     for file in files:
         user_filename = file.user_filename[:50] + ("..."  if len(file.user_filename) > 50 else "")
@@ -368,6 +382,8 @@ async def create_group(request: Request,
     if not token_db:  # If token is not valid
         return JSONResponse(content={"status": "error", "message": "Auth error", "auth_error": auth_error}, status_code=401)
     
+    if len(body["group_name"]) > 50:
+        return JSONResponse(content={"status": "error", "message": "Group name length exceeded (50 chars)"}, status_code=400)
     group = await db.group.create(data={
                                 "name": body["group_name"],
                                 "group_id": random.randint(10000000, 99999999),
