@@ -90,7 +90,7 @@ async def check_token(Authorization):
     return token_db, {}
 
 
-@app.get("/invite/{group_id}")  # File upload handler
+@app.get("/invite/{group_id}")  # invite page handler
 async def invite(group_id: str, request: Request):
     async with aiofiles.open("accept_invite.html", mode="rb") as f:
             return Response(await f.read(), media_type="text/html", status_code=200)
@@ -324,7 +324,7 @@ async def getFiles(
     )  # Get user files from db
 
     if group_id == "private":
-        files = await db.file.find_many(where={"user_id": user.id}
+        files = await db.file.find_many(where={"user_id": user.id, "group_id": -1}
     )  # Get all user files from db
     else:
         if not group_id.isnumeric():
@@ -571,7 +571,7 @@ async def logout(
     return {"status": "success", "message": "logged out"}
 
 
-@app.post("/api/transfer")  # logout handler
+@app.post("/api/transfer")  # transfer handler
 @limiter.limit(dynamic_limit_provider)
 async def transfer(
     request: Request,
@@ -625,7 +625,7 @@ async def transfer(
 # --------------------------------------Groups------------------------------------------
 
 
-@app.post("/api/create_group")  # create_group handler
+@app.post("/api/create_group")  # create group handler
 @limiter.limit(dynamic_limit_provider)
 async def create_group(
     request: Request,
@@ -677,7 +677,7 @@ async def create_group(
     }
 
 
-@app.delete("/api/delete_group/{group_id}")  # delete_group handler
+@app.delete("/api/delete_group/{group_id}")  # delete group handler
 @limiter.limit(dynamic_limit_provider)
 async def delete_group(
     group_id: int,
@@ -718,7 +718,7 @@ async def delete_group(
     return {"status": "success", "message": "deleted"}
 
 
-@app.get("/api/generate_invite/{group_id}")  # generate_invite handler
+@app.get("/api/generate_invite/{group_id}")  # generate invite handler
 @limiter.limit(dynamic_limit_provider)
 async def generate_invite(
     group_id: int,
@@ -817,7 +817,7 @@ async def delete_group(
     }
 
 
-@app.get("/api/invite_info/{invite_link}")  # join handler
+@app.get("/api/invite_info/{invite_link}")  # invite info handler
 @limiter.limit(dynamic_limit_provider)
 async def delete_group(
     invite_link: str,
@@ -897,7 +897,7 @@ async def delete_group(
     return {"status": "success", "message": "leaved"}
 
 
-@app.get("/api/get_groups")  # leave handler
+@app.get("/api/get_groups")  # get groups handler
 @limiter.limit(dynamic_limit_provider)
 async def get_groups(
     request: Request,
