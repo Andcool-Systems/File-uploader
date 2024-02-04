@@ -13,6 +13,7 @@ generator db {
 model file {
   id            Int     @id @default(autoincrement())
   user_id       Int     @default(-1)
+  group_id      BigInt  @default(-1)
   created_date  String  @default("")
   url           String  @default("")
   filename      String  @default("")

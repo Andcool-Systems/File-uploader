@@ -5,8 +5,8 @@ body{
     justify-content: center;
     background-color: #222222;
     color: #eeeeee;
-    height: 100%;
     overflow-x: hidden;
+    margin: 0;
 }
 
 main{
@@ -286,6 +286,41 @@ nav a:hover{
     padding: 5px;
     max-width: 100%;
 }
+
+.group_btn{
+    background-color: #222222;
+    color: #eeeeee;
+    border: 2px rgb(105, 105, 105) solid;
+    border-radius: 10px;
+    width: 31px;
+    height: 31px;
+    font-family: 'Roboto Mono', monospace;
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 0px;
+    margin-left: 5px;
+    transition: background-color 0.2s;
+    cursor: pointer;
+}
+
+.group_btn:hover{
+    background-color: rgb(109, 109, 109);
+    transition: background-color 0.2s;
+}
+
+#username{
+    font-size: 70%;
+    color:  rgb(200, 200, 200)
+}
+
+#invite_users:disabled{
+    cursor: default;
+    border: 2px rgb(68, 68, 68) solid;
+}
+#invite_users:disabled:hover{
+    background-color: #222222;
+}
+
 @media(max-width: 425px){
     main{width: 90%;}
     h1{font-size: 130%;}

@@ -79,11 +79,17 @@
                  </label>
             </form>
             
-            <p style="margin-bottom: 0%;">Select file group:</p>
-            <select id="groups">
-                <option selected value="private">Private</option>
-            
-            </select>
+            <div id="groups_selector" style="display: none;">
+                <p style="margin-bottom: 5px;">Select file group:</p>
+
+                <div style="display: flex; align-items: center; flex-direction: row; justify-content: flex-start;">
+                    <select id="groups">
+                        <option selected value="private">Private</option>
+                    </select>
+                    <button class="group_btn" title="Create new group">+</button>
+                    <button class="group_btn" title="Invite users" disabled id="invite_users"><image src="./res/user_plus.svg" style="width: 15px;"></image></button>
+                </div>
+            </div>
             <p id="load_mess"></p>
             <table id="files_table">
             </table>

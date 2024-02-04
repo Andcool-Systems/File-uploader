@@ -1,8 +1,10 @@
 import random
 
+
 def generate_token(length):
     base = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789-+="
     return "".join([random.choice(base) for x in range(length)])
+
 
 def calculate_size(size: int):
     units = ["B", "KB", "MB", "GB", "TB"]
@@ -14,4 +16,3 @@ def calculate_size(size: int):
         unit_iteration += 1
 
     return f"{round(calculated_size, 2)}{units[unit_iteration]}"
-
