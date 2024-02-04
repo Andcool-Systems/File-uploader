@@ -49,6 +49,14 @@ model Group{
     group_id       BigInt @default(0)
     admin_id       Int    @default(0)
     members        User[]
-    invite_string  String @default("")
+    invitements    Invitements[]
 }
+
+model Invitements{
+    id           Int    @id @default(autoincrement())
+    data         String @default("")
+    group        Group   @relation(fields: [group_id], references: [id])
+    group_id     Int    @default(0)
+}
+
 

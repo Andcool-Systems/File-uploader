@@ -313,12 +313,27 @@ nav a:hover{
     color:  rgb(200, 200, 200)
 }
 
-#invite_users:disabled{
+.group_btn:disabled{
     cursor: default;
     border: 2px rgb(68, 68, 68) solid;
 }
-#invite_users:disabled:hover{
+.group_btn:disabled:hover{
     background-color: #222222;
+}
+
+.button_creation_class{
+    background-color: #222222; 
+    border: 2px rgb(105, 105, 105) solid;
+    border-radius: 10px; 
+    padding: 10px; 
+    color: white; 
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.button_creation_class:hover{
+    background-color: rgb(109, 109, 109);
+    transition: background-color 0.2s;
 }
 
 @media(max-width: 425px){

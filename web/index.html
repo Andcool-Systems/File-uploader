@@ -12,7 +12,7 @@
         <link rel="preload" as="image" href="./res/external-link.png">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <script src="login/script.js"></script>
-        <script src="api.js"></script>
+        <script src="script.js"></script>
         <script src="snowflakes.js"></script>
     </head>
     <script>
@@ -80,15 +80,27 @@
             </form>
             
             <div id="groups_selector" style="display: none;">
-                <p style="margin-bottom: 5px;">Select file group:</p>
+                <p style="margin-bottom: 5px; margin-left: 0;">Select file group:</p>
 
                 <div style="display: flex; align-items: center; flex-direction: row; justify-content: flex-start;">
                     <select id="groups">
                         <option selected value="private">Private</option>
                     </select>
-                    <button class="group_btn" title="Create new group">+</button>
-                    <button class="group_btn" title="Invite users" disabled id="invite_users"><image src="./res/user_plus.svg" style="width: 15px;"></image></button>
+                    <button class="group_btn" title="Create new group" 
+                    onclick="document.getElementById('group_create_div').style.display = document.getElementById('group_create_div').style.display == 'none' ? 'block': 'none'">+</button>
+                    <button class="group_btn" id="leave">-</button>
+                    <button class="group_btn" title="Invite users" disabled id="invite_users" onclick="create_invite()"><image src="./res/user_plus.svg" style="width: 15px;"></image></button>
                 </div>
+            </div>
+            <div style="display: none;" id="invite_link_link">
+                <p style="margin-bottom: 5px; margin-top: 5px">Generated invite link:</p>
+                <p id="invite_link" style="margin: 0%; font-size: 90%; margin-left: 2px; cursor:pointer;"></p>
+            </div>
+            <div id="group_create_div" style="display: none;">
+                <p style="margin-bottom: 5px; margin-left: 0;">Create group</p>
+                <input id="group_name" type="text" placeholder="Group name" maxlength="50" style="background-color: #222222; border: 2px rgb(105, 105, 105) solid;
+                border-radius: 10px; padding: 10px; color: white"></input>
+                <button class="button_creation_class" onclick="create_group()">Create</button>
             </div>
             <p id="load_mess"></p>
             <table id="files_table">

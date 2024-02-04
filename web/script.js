@@ -1,7 +1,7 @@
 let api_upload_url = "/api/upload";
 let api_file_url = "/file/";
-//let api_url = "https://fu.andcool.ru";
-let api_url = "http://127.0.0.1:8080";
+let api_url = "https://fu.andcool.ru";
+//let api_url = "http://127.0.0.1:8080";
 
 async function delete_file(data, id) {
 	let confirmed = confirm("Delete it? It will be impossible to restore the file!");
@@ -103,6 +103,166 @@ async function get_new_tokens(accessToken) {
 		return response.data.accessToken;
 	} catch {
 		return false;
+	}
+}
+
+async function create_group() {
+	accessToken = localStorage.getItem("accessToken");
+	if (!accessToken) return [];
+	if (!checkAccess(accessToken)) {
+		let new_access = await get_new_tokens(accessToken);
+		if (!new_access) {
+			localStorage.removeItem("accessToken");
+			return [];
+		}
+		accessToken = new_access;
+		localStorage.setItem("accessToken", new_access);
+	}
+	try {
+		let name = document.getElementById('group_name').value;
+		if(name.length > 0 && name.length < 50){
+			let response = await axios.post(api_url + "/api/create_group", { 'group_name': name }, {
+				headers: {
+					'Authorization': 'Bearer ' + accessToken
+				}
+			})
+			if (!response) return;
+			if (response.status == 200) {
+				let groups = document.getElementById('groups');
+				groups.value = response.data.group_id;
+				localStorage.setItem('prev_group', response.data.group_id);
+				location.reload();
+			}else{
+				alert(response.data.message);
+			}
+		}
+
+
+	} catch (e) {
+		if (e.response && e.response.status == 401) {
+			localStorage.removeItem("accessToken");
+			return [];
+		}
+		return [];
+	}
+}
+
+async function create_invite() {
+	accessToken = localStorage.getItem("accessToken");
+	if (!accessToken) return [];
+	if (!checkAccess(accessToken)) {
+		let new_access = await get_new_tokens(accessToken);
+		if (!new_access) {
+			localStorage.removeItem("accessToken");
+			return [];
+		}
+		accessToken = new_access;
+		localStorage.setItem("accessToken", new_access);
+	}
+	try {
+		let gr_id = document.getElementById('groups').value;
+		let response = await axios.get(api_url + "/api/generate_invite/" + gr_id, {
+			headers: {
+				'Authorization': 'Bearer ' + accessToken
+			}
+		})
+		if (!response) return;
+		if (response.status == 200) {
+			let invite_link = document.getElementById('invite_link');
+			invite_link.innerHTML = response.data.invite_link;
+			invite_link.onclick = () => {navigator.clipboard.writeText(response.data.invite_link)}
+			document.getElementById('invite_link_link').style.display = "block";
+		}else{
+			alert(response.data.message);
+		}
+	
+
+
+	} catch (e) {
+		if (e.response && e.response.status == 401) {
+			localStorage.removeItem("accessToken");
+			return [];
+		}
+		return [];
+	}
+}
+
+
+async function delete_group() {
+	accessToken = localStorage.getItem("accessToken");
+	if (!accessToken) return [];
+	if (!checkAccess(accessToken)) {
+		let new_access = await get_new_tokens(accessToken);
+		if (!new_access) {
+			localStorage.removeItem("accessToken");
+			return [];
+		}
+		accessToken = new_access;
+		localStorage.setItem("accessToken", new_access);
+	}
+	try {
+		let gr_id = document.getElementById('groups').value;
+		if(confirm("Delete group? All files would be unlinked from the group! (Not deleted)")){
+			let response = await axios.delete(api_url + "/api/delete_group/" + gr_id, {
+				headers: {
+					'Authorization': 'Bearer ' + accessToken
+				}
+			})
+			if (!response) return;
+			if (response.status == 200) {
+				localStorage.setItem('prev_group', "private");
+				location.reload();
+			}else{
+				alert(response.data.message);
+			}
+		}
+
+
+	} catch (e) {
+		if (e.response && e.response.status == 401) {
+			localStorage.removeItem("accessToken");
+			return [];
+		}
+		return [];
+	}
+}
+
+async function leave_group() {
+	accessToken = localStorage.getItem("accessToken");
+	if (!accessToken) return [];
+	if (!checkAccess(accessToken)) {
+		let new_access = await get_new_tokens(accessToken);
+		if (!new_access) {
+			localStorage.removeItem("accessToken");
+			return [];
+		}
+		accessToken = new_access;
+		localStorage.setItem("accessToken", new_access);
+	}
+	try {
+		let gr_id = document.getElementById('groups').value;
+		if(confirm("Leave group?")){
+			let response = await axios.post(api_url + "/api/leave/" + gr_id, {}, {
+				headers: {
+					'Authorization': 'Bearer ' + accessToken
+				}
+			})
+			if (!response) return;
+			if (response.status == 200) {
+				localStorage.setItem('prev_group', "private");
+				location.reload();
+			}else{
+				alert(response.data.message);
+			}
+		}
+
+
+	} catch (e) {
+		if (e.response && e.response.status == 401) {
+			localStorage.removeItem("accessToken");
+			return [];
+		}
+		return [];
 	}
 }
 
@@ -215,6 +375,9 @@ async function fetch_files(accessToken) {
 
 		document.getElementById('login_mess').textContent = "Logged as " + response.data.username;
 		document.getElementById('invite_users').disabled = !response.data.is_group_owner;
+		document.getElementById('leave').title = response.data.is_group_owner ? "Delete group" : "Leave group";
+		document.getElementById('leave').disabled = (response.data.is_group_owner == null);
+		document.getElementById('leave').onclick = response.data.is_group_owner ? () => {delete_group()} : () => {leave_group()}
 
 		let len = 0;
 		let table = document.getElementById('files_table');
@@ -290,6 +453,7 @@ async function logout() {
 addEventListener("DOMContentLoaded", (event) => {
 	document.getElementById('groups').addEventListener("change", (event) => {
 		localStorage.setItem("prev_group", event.target.value);
+		document.getElementById('invite_link_link').style.display = "none";
 		fetch_files(localStorage.getItem("accessToken"),
 			event.target.value);
 	});

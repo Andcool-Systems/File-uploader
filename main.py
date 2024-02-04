@@ -90,6 +90,12 @@ async def check_token(Authorization):
     return token_db, {}
 
 
+@app.get("/invite/{group_id}")  # File upload handler
+async def invite(group_id: str, request: Request):
+    async with aiofiles.open("accept_invite.html", mode="rb") as f:
+            return Response(await f.read(), media_type="text/html", status_code=200)
+
+
 @app.post("/api/upload/{group_id}")  # File upload handler
 @limiter.limit(dynamic_limit_provider_upload)
 async def upload_file(
@@ -348,6 +354,7 @@ async def getFiles(
         user_filename = file.user_filename[:50] + (
             "..." if len(file.user_filename) > 50 else ""
         )
+        usr = await db.user.find_first(where={"id": file.user_id})
         files_response.append(
             {
                 "file_url": file.url,
@@ -358,7 +365,7 @@ async def getFiles(
                 "creation_date": file.created_date,
                 "craeted_at": file.craeted_at,
                 "size": utils.calculate_size(file.size),
-                "username": token_db.user.username if group_id != "private" else None,
+                "username": (usr.username if usr else None) if group_id != "private" else None,
                 "synced": True,
             }
         )
@@ -367,7 +374,7 @@ async def getFiles(
             "status": "success",
             "message": "messages got successfully",
             "username": user.username,
-            "is_group_owner": False if group_id == "private" else group.admin_id == token_db.user_id,
+            "is_group_owner": None if group_id == "private" else group.admin_id == token_db.user_id,
             "data": files_response,
         },
         status_code=200,
@@ -506,7 +513,7 @@ async def login(request: Request, bot: bool = False):
 
 @app.post("/api/refresh_token")  # refresh token handler
 @limiter.limit(dynamic_limit_provider)
-async def login(request: Request):
+async def refresh_token(request: Request):
     body = await request.json()
     if "accessToken" not in body:  # If token doesn't provided
         return JSONResponse(
@@ -541,7 +548,7 @@ async def login(request: Request):
 
 @app.post("/api/logout")  # logout handler
 @limiter.limit(dynamic_limit_provider)
-async def login(
+async def logout(
     request: Request,
     Authorization: Annotated[
         Union[str, None], Header(convert_underscores=False)
@@ -657,7 +664,6 @@ async def create_group(
             "name": body["group_name"],
             "group_id": random.randint(10000000, 99999999),
             "admin_id": token_db.user_id,
-            "invite_string": utils.generate_token(15),
             "members": {
                 "connect": {"id": token_db.user_id},
             },
@@ -667,7 +673,6 @@ async def create_group(
         "status": "success",
         "message": "created",
         "name": group.name,
-        "invite_string": group.invite_string,
         "group_id": group.group_id,
     }
 
@@ -713,6 +718,50 @@ async def delete_group(
     return {"status": "success", "message": "deleted"}
 
 
+@app.get("/api/generate_invite/{group_id}")  # generate_invite handler
+@limiter.limit(dynamic_limit_provider)
+async def generate_invite(
+    group_id: int,
+    request: Request,
+    Authorization: Annotated[
+        Union[str, None], Header(convert_underscores=False)
+    ] = None,
+):
+
+    token_db, auth_error = await check_token(Authorization)  # Check token validity
+    if not token_db:  # If token is not valid
+        return JSONResponse(
+            content={
+                "status": "error",
+                "message": "Auth error",
+                "auth_error": auth_error,
+            },
+            status_code=401,
+        )
+
+    group = await db.group.find_first(where={"group_id": group_id})
+    if not group:
+        return JSONResponse(
+            {"status": "error", "message": "Group not found"}, status_code=404
+        )
+
+    if group.admin_id != token_db.user_id:
+        return JSONResponse(
+            {
+                "status": "error",
+                "message": "You dont have any permissions",
+            },
+            status_code=403,
+        )
+
+    invite = await db.invitements.create(data={"data": utils.generate_token(15),
+                                      "group":{
+                                          'connect':{"id": group.id}
+                                      }})
+
+    return {"status": "success", "message": "created", "invite_link": f"https://fu.andcool.ru/invite/{invite.data}"}
+
+
 @app.post("/api/join/{invite_link}")  # join handler
 @limiter.limit(dynamic_limit_provider)
 async def delete_group(
@@ -734,14 +783,15 @@ async def delete_group(
             status_code=401,
         )
 
-    group = await db.group.find_first(
-        where={"invite_string": invite_link}, include={"members": True}
+    invite = await db.invitements.find_first(
+        where={"data": invite_link}, include={"group": True}
     )
-    if not group:
+    if not invite:
         return JSONResponse(
             {"status": "error", "message": "Invite link not found"}, status_code=404
         )
 
+    group = await db.group.find_first(where={"id": invite.group_id}, include={"members": True})
     if token_db.user in group.members:
         return JSONResponse(
             {"status": "error", "message": "You are already in the group"},
@@ -757,12 +807,51 @@ async def delete_group(
         where={"id": group.id},
     )
 
+    await db.invitements.delete(where={"id": invite.id})
+
     return {
         "status": "success",
         "message": "Joined",
         "name": group.name,
-        "invite_string": group.invite_string,
         "group_id": group.group_id,
+    }
+
+
+@app.get("/api/invite_info/{invite_link}")  # join handler
+@limiter.limit(dynamic_limit_provider)
+async def delete_group(
+    invite_link: str,
+    request: Request,
+    Authorization: Annotated[
+        Union[str, None], Header(convert_underscores=False)
+    ] = None,
+):
+
+    token_db, auth_error = await check_token(Authorization)  # Check token validity
+    if not token_db:  # If token is not valid
+        return JSONResponse(
+            content={
+                "status": "error",
+                "message": "Auth error",
+                "auth_error": auth_error,
+            },
+            status_code=401,
+        )
+
+    invite = await db.invitements.find_first(
+        where={"data": invite_link}, include={"group": True}
+    )
+    if not invite:
+        return JSONResponse(
+            {"status": "error", "message": "Invite link not found"}, status_code=404
+        )
+
+
+    return {
+        "status": "success",
+        "message": "Info got successfully",
+        "name": invite.group.name,
+        "group_id": invite.group.group_id,
     }
 
 
@@ -837,12 +926,10 @@ async def get_groups(
             {
                 "name": group.name,
                 "group_id": group.group_id,
-                "invite_string": group.invite_string,
             }
         )
 
     return {"status": "success", "message": "groups got successfully", "groups": groups}
-
 
 if __name__ == "__main__":  # Start program
     uvicorn.run("main:app", reload=True, port=8080)
