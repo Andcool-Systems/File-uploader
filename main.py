@@ -164,7 +164,7 @@ async def upload_file(
         if token_db.user not in group.members:
             return JSONResponse(
                 content={"status": "error", "message": "You are not in the group"},
-                status_code=400,
+                status_code=403,
             )
     else:
         group_id = -1

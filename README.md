@@ -9,7 +9,7 @@ Page redirection is handled through the nginx proxy server. The API consists of 
 
 - `/file/` – Endpoint where all files are located.
 - `/api` – Main API endpoint
-- - `/upload` – Endpoint for receiving file upload requests.
+- - `/upload/` – Endpoint for receiving file upload requests.
 - - `/delete/` – Request to delete a file.
 - - `/login` – Log in with login and password.
 - - `/register` – Create a new account with a login and password.
@@ -30,6 +30,7 @@ This section will be referred to as `1.1` in the documentation.
 ```json
 {
     "status": "error",
+    "message": "Auth error",
     "auth_error": {
         "message": "error message",
         "errorId": <error code>
@@ -61,10 +62,13 @@ If the file type cannot be determined, the API returns the file in download mode
 | 404        | File not found | The file referenced by the code does not exist |
 
 ### Upload a file to the server
-`POST /api/upload?include_ext=false`   
+`POST /api/upload/{group_id}?include_ext=false`   
 The request body should contain the file to be uploaded.   
 Only one file is allowed, and its size should not exceed 100MB.   
 The maximum request frequency is **2 per minute**.    
+
+**Query params:**  
+> The `group_id` parameter indicates the group to which the file should be uploaded. The parameter can take the value `private`, which means that the file must be linked to a personal account. When passing the `group_id` parameter other than the `private` Authorization header is required.  
 
 **Request body:**  
 > **The `Content-Type` header of the request must be a `multipart/form-data`**  
@@ -93,10 +97,13 @@ On successful execution, the API returns a `200` HTTP code along with a JSON res
 ```
 
 #### Possible Errors
-| Error Code | Description                         | Possible Reasons                     |
-| ---------- | ----------------------------------- | ------------------------------------ |
-| 400        | No file uploaded                    | No file is given in the request body |
-| 413        | File size exceeds the limit (100MB) | The file size exceeds 100MB          |
+| Error Code | message                             | Possible Reasons                                                               |
+| ---------- | ----------------------------------- | ------------------------------------------------------------------------------ |
+| 400        | No file uploaded                    | No file is given in the request body                                           |
+| 413        | File size exceeds the limit (100MB) | The file size exceeds 100MB                                                    |
+| 400        | Invalid group id                    | `group_id` parameter contains non-numerical value                              |
+| 404        | Group not found                     | The group wuth provided `group_id` not found                                   |
+| 403        | You are not in the group            | Group is exists, but you are has not permissions to upload files in this group |
 
 ### Delete a file
 `GET /api/delete/<file_url>?key=<unique key>`  
@@ -184,9 +191,11 @@ Errors described in section `1.1` may occur as well.
 
 
 ### Get a list of files.
-`GET /api/get_files`  
+`GET /api/get_files/{group_id}`  
 It takes the `Authorization` header containing the access token.   
 Retrieves a list of all files associated with this account.  
+
+> The `group_id` parameter shows which group to get the files from. If the parameter is set to `private`, the files will be taken from a personal account, otherwise Authorization header is required
 
 #### Response Example
 
@@ -195,6 +204,7 @@ Retrieves a list of all files associated with this account.
     "status": "success",
     "message": "files got successfully",
     "username": "My cool username",
+    "is_group_owner": true,
     "data": [
         {
             "file_url": "4yn-8yjhsu",
@@ -213,6 +223,239 @@ Retrieves a list of all files associated with this account.
             "user_filename": "test1.mp4",
             "creation_date": "1.1.1971",
             "synced": true
+        }
+    ]
+}
+```
+
+#### Possible Errors
+
+Errors described in section `1.1` may occur as well.  
+| Error Code | message                  | Possible Reasons                                                               |
+| ---------- | ------------------------ | ------------------------------------------------------------------------------ |
+| 400        | Invalid group id         | `group_id` parameter contains non-numerical value                              |
+| 404        | Group not found          | The group wuth provided `group_id` not found                                   |
+| 403        | You are not in the group | Group is exists, but you are has not permissions to upload files in this group |
+
+
+### Transfer local files to an account.
+`POST /api/transfer`  
+It takes the `Authorization` header containing the access token.  
+
+> The request transfers local files to the account. The endpoint takes files from the `data` field in the request body and sequentially binds each file to an account. If the binding of any file failed, then these files will be returned in the response body in the `unsuccess` field. The file is transferred by their `file_url` and `key`
+
+#### Request body example
+```json
+{   
+    "data":[
+        {
+            "file_url": "4yn-8yjhsu",
+            "key": "6b9a1c1b-5594-4cb9-8d49-99a4c28782a1"
+        },
+        {
+            "file_url": "4yn-8yjhsR",
+            "key": "6b9a1c1b-5594-4cb9-8d49-99a4c28782a1"
+        }
+    ]
+}
+```
+
+#### Response example
+
+```json
+{
+    "status": "success",
+    "message": "transfered", 
+    "unsuccess": [
+        {
+            "file_url": "4yn-8yjhsR",
+            "key": "6b9a1c1b-5594-4cb9-8d49-99a4c28782a1"
+        }
+    ]
+}
+
+```
+
+#### Possible Errors
+
+Errors described in section `1.1` may occur as well.  
+| Error Code | message                         | Possible Reasons                               |
+| ---------- | ------------------------------- | ---------------------------------------------- |
+| 400        | Couldn't parse request body     | No request body provided                       |
+| 400        | No `data` field in request body | Couldn't not find `data` field in request body |
+
+## Groups
+
+### Create file group
+`POST /api/create_group`  
+It takes the `Authorization` header containing the access token.  
+> Creates a group with the passed name. The maximum length of a group name is 50 characters.
+
+#### Request body example
+```json
+{   
+    "group_name": "New group"
+}
+```
+
+#### Response example
+
+```json
+{
+    "status": "success",
+    "message": "created",
+    "name": "New group",
+    "group_id": 12345678,
+}
+```
+
+#### Possible Errors
+
+Errors described in section `1.1` may occur as well.  
+| Error Code | message                               | Possible Reasons                                     |
+| ---------- | ------------------------------------- | ---------------------------------------------------- |
+| 400        | No `group_name` provided              | Couldn't not find `group_name` field in request body |
+| 400        | Group name length exceeded (50 chars) | Too long group name                                  |
+
+### Delete file group
+`DELETE /api/delete_group/{group_id}`  
+It takes the `Authorization` header containing the access token.  
+> Deletes a group with the passed `group_id`.
+
+
+#### Response example
+
+```json
+{
+    "status": "success", 
+    "message": "deleted"
+}
+```
+
+#### Possible Errors
+
+Errors described in section `1.1` may occur as well.  
+| Error Code | message                                            | Possible Reasons                       |
+| ---------- | -------------------------------------------------- | -------------------------------------- |
+| 404        | Group not found                                    | Group with passed `group_id` not found |
+| 403        | You dont have any permissions to delete this group | You are not owner of this group        |
+
+### Generate a new invite link
+`GET /api/generate_invite/{group_id}`  
+It takes the `Authorization` header containing the access token.  
+> Generates a invite link for group with the passed `group_id`.
+
+
+#### Response example
+
+```json
+{
+    "status": "success",
+    "message": "created",
+    "invite_link": "https://fu.andcool.ru/invite/DSAfd4-hpoqFDFj"
+}
+```
+
+#### Possible Errors
+
+Errors described in section `1.1` may occur as well.  
+| Error Code | message                       | Possible Reasons                       |
+| ---------- | ----------------------------- | -------------------------------------- |
+| 404        | Group not found               | Group with passed `group_id` not found |
+| 403        | You dont have any permissions | You are not owner of this group        |
+
+### Join to a group
+`POST /api/join/{invite_link}`  
+It takes the `Authorization` header containing the access token.  
+> Joins to a group by passed `invite_link`.
+
+
+#### Response example
+
+```json
+{
+    "status": "success",
+    "message": "created",
+    "name": "New group",
+    "group_id": 12345678,
+}
+```
+
+#### Possible Errors
+
+Errors described in section `1.1` may occur as well.  
+| Error Code | message                      | Possible Reasons              |
+| ---------- | ---------------------------- | ----------------------------- |
+| 404        | Invite link not found        | Could not found a invite link |
+| 400        | You are already in the group | You are already in the group  |
+
+
+### Leave from group
+`POST /api/leave/{group_id}`  
+It takes the `Authorization` header containing the access token.  
+> Leaves from group with passed `group_id`
+
+
+#### Response example
+```json
+{
+    "status": "success", 
+    "message": "leaved"
+}
+```
+
+#### Possible Errors
+
+Errors described in section `1.1` may occur as well.  
+| Error Code | message                  | Possible Reasons                       |
+| ---------- | ------------------------ | -------------------------------------- |
+| 404        | Group not found          | Group with passed `group_id` not found |
+| 400        | You are not in the group | You are not in the group               |
+
+
+### Get info about invite link
+`GET /api/invite_info/{invite_link}`  
+It takes the `Authorization` header containing the access token.  
+> Gives an information about group about invite link.
+
+
+#### Response example
+```json
+{
+    "status": "success",
+    "message": "created",
+    "name": "New group",
+    "group_id": 12345678,
+}
+```
+
+#### Possible Errors
+
+Errors described in section `1.1` may occur as well.  
+| Error Code | message               | Possible Reasons              |
+| ---------- | --------------------- | ----------------------------- |
+| 404        | Invite link not found | Could not found a invite link |
+
+
+### Get all group from account
+`GET /api/get_groups`  
+It takes the `Authorization` header containing the access token.  
+> Get list of groups linked to an account.
+
+
+#### Response example
+```json
+{
+    "status": "success", 
+    "message": "groups got successfully", 
+    "groups": [
+        {
+            "name": "Bim-Bim",
+            "group_id": 12345679
+        },
+        {
+            "name": "Bam-Bam",
+            "group_id": 12345677
         }
     ]
 }
