@@ -5,17 +5,10 @@ The file uploader is implemented in the Python programming language using FastAP
 ## API Documentation
 
 The API is currently hosted at [fu.andcool.ru](https://fu.andcool.ru/).   
-Page redirection is handled through the nginx proxy server. The API consists of 8 endpoint URLs:  
+Page redirection is handled through the nginx proxy server. The API consists of 2 pathes:  
 
 - `/file/` – Endpoint where all files are located.
-- `/api` – Main API endpoint
-- - `/upload/` – Endpoint for receiving file upload requests.
-- - `/delete/` – Request to delete a file.
-- - `/login` – Log in with login and password.
-- - `/register` – Create a new account with a login and password.
-- - `/refresh_token` – Refresh the existing token.
-- - `/get_files` (`/getFiles` deprecated) – Get list of files
-- - `/logout` – Log out from account
+- `/api/` – Main API endpoint
 
 ### 1.1 Authorization Errors
 
