@@ -1,3 +1,3 @@
-[submodule "Discord_provider"]
-	path = Discord_provider
+[submodule "FileUploaderBot"]
+	path = FileUploaderBot
 	url = https://github.com/kwixie1/FileUploaderBot.git
