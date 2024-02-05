@@ -13,6 +13,7 @@ generator db {
 model file {
   id            Int     @id @default(autoincrement())
   user_id       Int     @default(-1)
+  group_id      BigInt  @default(-1)
   created_date  String  @default("")
   url           String  @default("")
   filename      String  @default("")
@@ -32,11 +33,30 @@ model User {
   username   String  @default("")
   password   String  @default("")
   tokens     Token[]
+  groups     Group[]
 }
 
 model Token{
-    id  Int @id @default(autoincrement())
-    accessToken String
-    user User @relation(fields: [user_id], references: [id])
-    user_id Int 
+    id          Int    @id @default(autoincrement())
+    accessToken String @default("")
+    user        User   @relation(fields: [user_id], references: [id])
+    user_id     Int    @default(0)
 }
+
+model Group{
+    id             Int    @id @default(autoincrement())
+    name           String @default("")
+    group_id       BigInt @default(0)
+    admin_id       Int    @default(0)
+    members        User[]
+    invitements    Invitements[]
+}
+
+model Invitements{
+    id           Int    @id @default(autoincrement())
+    data         String @default("")
+    group        Group   @relation(fields: [group_id], references: [id])
+    group_id     Int    @default(0)
+}
+
+

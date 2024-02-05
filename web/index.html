@@ -7,6 +7,9 @@
         <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@800&family=Roboto+Mono&display=swap" rel="stylesheet">
         <link rel="icon" href="/favicon.ico" type="image/x-icon">
         <link rel="stylesheet" href="style.css">
+        <link rel="preload" as="image" href="./res/globe_on.png">
+        <link rel="preload" as="image" href="./res/globe_off.png">
+        <link rel="preload" as="image" href="./res/external-link.svg">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <script src="login/script.js"></script>
         <script src="script.js"></script>
@@ -36,6 +39,9 @@
                 stop_anim();
             }
         }
+        //const urlParams = new URLSearchParams(window.location.search);
+        //const myParam = urlParams.get('myParam');
+        //console.log(myParam);
     </script>
     <button onclick="change_snow()" id="snow_btn" title="Switch snow">*</button>
     <div id="canvas">
@@ -72,6 +78,30 @@
                        <span>Choose file</span>
                  </label>
             </form>
+            
+            <div id="groups_selector" style="display: none;">
+                <p style="margin-bottom: 5px; margin-left: 0;">Select file group:</p>
+
+                <div style="display: flex; align-items: center; flex-direction: row; justify-content: flex-start;">
+                    <select id="groups">
+                        <option selected value="private">Private</option>
+                    </select>
+                    <button class="group_btn" title="Create new group" 
+                    onclick="document.getElementById('group_create_div').style.display = document.getElementById('group_create_div').style.display == 'none' ? 'block': 'none'">+</button>
+                    <button class="group_btn" id="leave">-</button>
+                    <button class="group_btn" title="Invite users" disabled id="invite_users" onclick="create_invite()"><image src="./res/user_plus.svg" style="width: 15px;"></image></button>
+                </div>
+            </div>
+            <div style="display: none;" id="invite_link_link">
+                <p style="margin-bottom: 5px; margin-top: 5px">Generated invite link:</p>
+                <p id="invite_link" style="margin: 0%; font-size: 90%; margin-left: 2px; cursor:pointer; overflow-wrap: anywhere;"></p>
+            </div>
+            <div id="group_create_div" style="display: none;">
+                <p style="margin-bottom: 5px; margin-left: 0;">Create group</p>
+                <input id="group_name" type="text" placeholder="Group name" maxlength="50" style="background-color: #222222; border: 2px rgb(105, 105, 105) solid;
+                border-radius: 10px; padding: 10px; color: white"></input>
+                <button class="button_creation_class" onclick="create_group()">Create</button>
+            </div>
             <p id="load_mess"></p>
             <table id="files_table">
             </table>
