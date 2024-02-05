@@ -93,7 +93,7 @@ async def check_token(Authorization):
 @app.get("/invite/{group_id}")  # invite page handler
 async def invite(group_id: str, request: Request):
     async with aiofiles.open("accept_invite.html", mode="rb") as f:
-            return Response(await f.read(), media_type="text/html", status_code=200)
+        return Response(await f.read(), media_type="text/html", status_code=200)
 
 
 @app.post("/api/upload/{group_id}")  # File upload handler
@@ -112,12 +112,6 @@ async def upload_file(
     if not file:  # Check, if the file is uploaded
         return JSONResponse(
             content={"status": "error", "message": "No file uploaded"}, status_code=400
-        )
-
-    if file.filename.find(".") == -1:  # Check, if the file has a extension
-        return JSONResponse(
-            content={"status": "error", "message": "Bad file extension"},
-            status_code=400,
         )
 
     if file.size > 100 * 1024 * 1024:  # 100MB limit
@@ -145,7 +139,8 @@ async def upload_file(
 
     if group_id != "private":
         if not token_db:  # If token is not valid
-            return JSONResponse(content={
+            return JSONResponse(
+                content={
                     "status": "error",
                     "message": "Auth error",
                     "auth_error": auth_error,
@@ -153,23 +148,29 @@ async def upload_file(
                 status_code=401,
             )
         if not group_id.isnumeric():
-            return JSONResponse(content={"status": "error", "message": "Invalid group id"},
-                status_code=400)
+            return JSONResponse(
+                content={"status": "error", "message": "Invalid group id"},
+                status_code=400,
+            )
 
-        group = await db.group.find_first(where={"group_id": group_id}, include={"members": True}
+        group = await db.group.find_first(
+            where={"group_id": group_id}, include={"members": True}
         )
         if not group:
-            return JSONResponse(content={"status": "error", "message": "Group not found"},
-                status_code=404
+            return JSONResponse(
+                content={"status": "error", "message": "Group not found"},
+                status_code=404,
             )
         if token_db.user not in group.members:
-            return JSONResponse(content={"status": "error", "message": "You are not in the group"},
-                status_code=400)
+            return JSONResponse(
+                content={"status": "error", "message": "You are not in the group"},
+                status_code=400,
+            )
     else:
         group_id = -1
 
     key = str(uuid.uuid4())  # Generate unique delete key
-    ext = "." + file.filename.split(".")[-1].lower()  # Get file extension
+    ext = ("." + file.filename.split(".")[-1].lower()) if file.filename.find(".") != -1 else ""  # Get file extension
     fid = utils.generate_token(10) + (ext if include_ext else "")  # Generate file url
     fn = str(uuid.uuid4()) + ext  # Generate file name
 
@@ -188,9 +189,7 @@ async def upload_file(
             "last_watched": time.time(),
             "key": key,
             "type": (
-                filetypes.get(ext[1:], default)
-                if ext.lower()[1:] in filetypes
-                else "download"
+                filetypes.get(ext[1:], default) if ext and ext.lower()[1:] in filetypes else "download"
             ),
             "ext": ext,
             "size": file.size,
@@ -212,7 +211,7 @@ async def upload_file(
             "ext": created.ext,
             "size": utils.calculate_size(file.size),
             "user_filename": user_filename,
-            "username": None if not token_db else token_db.user.username,
+            "username": None if not token_db and group_id != "private" else token_db.user.username,
             "craeted_at": created.craeted_at,
             "synced": saved_to_account,
             "auth_error": auth_error,
@@ -324,8 +323,9 @@ async def getFiles(
     )  # Get user files from db
 
     if group_id == "private":
-        files = await db.file.find_many(where={"user_id": user.id, "group_id": -1}
-    )  # Get all user files from db
+        files = await db.file.find_many(
+            where={"user_id": user.id, "group_id": -1}
+        )  # Get all user files from db
     else:
         if not group_id.isnumeric():
             return JSONResponse(
@@ -354,7 +354,7 @@ async def getFiles(
         user_filename = file.user_filename[:50] + (
             "..." if len(file.user_filename) > 50 else ""
         )
-        usr = await db.user.find_first(where={"id": file.user_id})
+        usr = (await db.user.find_first(where={"id": file.user_id})).username if group_id != "private" else None
         files_response.append(
             {
                 "file_url": file.url,
@@ -365,7 +365,7 @@ async def getFiles(
                 "creation_date": file.created_date,
                 "craeted_at": file.craeted_at,
                 "size": utils.calculate_size(file.size),
-                "username": (usr.username if usr else None) if group_id != "private" else None,
+                "username": usr,
                 "synced": True,
             }
         )
@@ -374,7 +374,9 @@ async def getFiles(
             "status": "success",
             "message": "messages got successfully",
             "username": user.username,
-            "is_group_owner": None if group_id == "private" else group.admin_id == token_db.user_id,
+            "is_group_owner": (
+                None if group_id == "private" else group.admin_id == token_db.user_id
+            ),
             "data": files_response,
         },
         status_code=200,
@@ -754,12 +756,15 @@ async def generate_invite(
             status_code=403,
         )
 
-    invite = await db.invitements.create(data={"data": utils.generate_token(15),
-                                      "group":{
-                                          'connect':{"id": group.id}
-                                      }})
+    invite = await db.invitements.create(
+        data={"data": utils.generate_token(15), "group": {"connect": {"id": group.id}}}
+    )
 
-    return {"status": "success", "message": "created", "invite_link": f"https://fu.andcool.ru/invite/{invite.data}"}
+    return {
+        "status": "success",
+        "message": "created",
+        "invite_link": f"https://fu.andcool.ru/invite/{invite.data}",
+    }
 
 
 @app.post("/api/join/{invite_link}")  # join handler
@@ -791,7 +796,9 @@ async def delete_group(
             {"status": "error", "message": "Invite link not found"}, status_code=404
         )
 
-    group = await db.group.find_first(where={"id": invite.group_id}, include={"members": True})
+    group = await db.group.find_first(
+        where={"id": invite.group_id}, include={"members": True}
+    )
     if token_db.user in group.members:
         return JSONResponse(
             {"status": "error", "message": "You are already in the group"},
@@ -845,7 +852,6 @@ async def delete_group(
         return JSONResponse(
             {"status": "error", "message": "Invite link not found"}, status_code=404
         )
-
 
     return {
         "status": "success",
@@ -928,8 +934,8 @@ async def get_groups(
                 "group_id": group.group_id,
             }
         )
-
     return {"status": "success", "message": "groups got successfully", "groups": groups}
+
 
 if __name__ == "__main__":  # Start program
     uvicorn.run("main:app", reload=True, port=8080)

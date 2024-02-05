@@ -336,6 +336,12 @@ nav a:hover{
     transition: background-color 0.2s;
 }
 
+#external{
+    width: 16px;
+    height: 16px;
+    
+}
+
 @media(max-width: 425px){
     main{width: 90%;}
     h1{font-size: 130%;}

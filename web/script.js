@@ -69,7 +69,8 @@ function append_to_files_arr(data, id) {
 	a_btn.title = "Open in new tab";
 
 	let href_img = document.createElement("img");
-	href_img.src = "./res/external-link.png";
+	href_img.src = "./res/external-link.svg";
+	href_img.id = "external";
 	a_btn.appendChild(href_img);
 
 	let username = document.createElement("p");

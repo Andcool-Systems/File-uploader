@@ -39,13 +39,13 @@ This section will be referred to as `1.1` in the documentation.
 
 **List of errors:** 
 
-| errorId | message                                               | Reasons                                             |
-| ------- | ----------------------------------------------------- | --------------------------------------------------- |
-| -1      | No Authorization header provided                      | The request is missing the `Authorization` header   |
+| errorId | message                                                | Reasons                                            |
+| ------- | ------------------------------------------------------ | -------------------------------------------------- |
+| -1      | No Authorization header provided                       | The request is missing the `Authorization` header  |
 | -2      | Authorization header must have `Bearer <token>` format | The `Authorization` header has an incorrect format |
-| -3      | Access token expired                                  | The token has expired                               |
-| -4      | Invalid access token                                  | The token cannot be decrypted                       |
-| -5      | Token not found                                       | The token is not found                              |
+| -3      | Access token expired                                   | The token has expired                              |
+| -4      | Invalid access token                                   | The token cannot be decrypted                      |
+| -5      | Token not found                                        | The token is not found                             |
 
 ### 1.2 Basic API
 
@@ -56,9 +56,9 @@ If the file type cannot be determined, the API returns the file in download mode
 
 #### Possible Errors
 
-| Error Code | Description                   | Possible Reasons                               |
-| ---------- | ----------------------------- | -----------------------------------------------|
-| 404        | File not found                | The file referenced by the code does not exist |
+| Error Code | Description    | Possible Reasons                               |
+| ---------- | -------------- | ---------------------------------------------- |
+| 404        | File not found | The file referenced by the code does not exist |
 
 ### Upload a file to the server
 `POST /api/upload?include_ext=false`   
@@ -93,11 +93,10 @@ On successful execution, the API returns a `200` HTTP code along with a JSON res
 ```
 
 #### Possible Errors
-| Error Code | Description                    | Possible Reasons                         |
-| ---------- | ------------------------------ | ---------------------------------------- |
-| 400        | No file uploaded               | No file is given in the request body     |
-| 400        | Bad file extension             | The file does not have an extension      |
-| 413        | File size exceeds the limit (100MB) | The file size exceeds 100MB         |
+| Error Code | Description                         | Possible Reasons                     |
+| ---------- | ----------------------------------- | ------------------------------------ |
+| 400        | No file uploaded                    | No file is given in the request body |
+| 413        | File size exceeds the limit (100MB) | The file size exceeds 100MB          |
 
 ### Delete a file
 `GET /api/delete/<file_url>?key=<unique key>`  
@@ -105,10 +104,10 @@ Successful execution returns a `200` status code, removing the file from the ser
 
 #### Possible Errors
 
-| Error Code | Description                | Possible Reasons                  |
-| ---------- | -------------------------- | ---------------------------------- |
-| 404        | File not found              | The file for deletion is not found |
-| 400        | Invalid unique key          | The provided unique key is invalid |
+| Error Code | Description        | Possible Reasons                   |
+| ---------- | ------------------ | ---------------------------------- |
+| 404        | File not found     | The file for deletion is not found |
+| 400        | Invalid unique key | The provided unique key is invalid |
 
 ### 1.2 Authorization API
 ### Login and register
@@ -142,22 +141,22 @@ Successful execution returns a `200` HTTP code, indicating successful registrati
 
 **Common for both requests:**
 
-| errorId | HTTP code |message                          | Reasons                                             |
-| ------- | ----------|---------------------------------| --------------------------------------------------- |
-| 2       | 400       | No username/password provided   | Username/password fields are missing in the request |
+| errorId | HTTP code | message                       | Reasons                                             |
+| ------- | --------- | ----------------------------- | --------------------------------------------------- |
+| 2       | 400       | No username/password provided | Username/password fields are missing in the request |
 
 **Errors for /register:**
 
-| errorId | HTTP code | message                                        | Reasons                                       |
-| ------- | ----------|------------------------------------------------| ----------------------------------------------|
-| 1       | 400       |An account with this name is already registered | A user with the given username already exists |
+| errorId | HTTP code | message                                         | Reasons                                       |
+| ------- | --------- | ----------------------------------------------- | --------------------------------------------- |
+| 1       | 400       | An account with this name is already registered | A user with the given username already exists |
 
 **Errors for /login:**
 
-| errorId | HTTP code | message              | Reasons                |
-| ------- | ----------|----------------------| -----------------------|
-| 3       | 400       |Wrong password        | Incorrect password     |
-| 4       | 404       |User not found        | Username not found     |
+| errorId | HTTP code | message        | Reasons            |
+| ------- | --------- | -------------- | ------------------ |
+| 3       | 400       | Wrong password | Incorrect password |
+| 4       | 404       | User not found | Username not found |
 
 ### Refreshe the token
 `POST /api/refresh_token`  
@@ -167,9 +166,9 @@ Successful execution returns a `200` HTTP code along with the `accessToken` fiel
 
 #### Possible Errors
 
-| errorId | HTTP code | message                     | Reasons                                           |
-| ------- | ----------|-----------------------------| ------------------------------------------------- |
-| 5       | 400       | No access token provided    | The `accessToken` field is missing in the request |
+| errorId | HTTP code | message                  | Reasons                                           |
+| ------- | --------- | ------------------------ | ------------------------------------------------- |
+| 5       | 400       | No access token provided | The `accessToken` field is missing in the request |
 
 Errors described in section `1.1` may also occur.  
 

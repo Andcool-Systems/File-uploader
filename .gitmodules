@@ -1,0 +1,3 @@
+[submodule "FileUploaderBot"]
+	path = FileUploaderBot
+	url = https://github.com/kwixie1/FileUploaderBot.git
