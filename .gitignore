@@ -1,0 +1,7 @@
+/uploads
+/__pycache__
+/dataBase.db
+/.env
+/out
+/Telegram_provider/dataBase.db
+/Telegram_provider/.env

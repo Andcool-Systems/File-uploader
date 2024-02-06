@@ -1,0 +1,99 @@
+body{
+    font-family: 'Roboto Mono', monospace;
+    display: flex;
+    justify-content: center;
+    background-color: #222222;
+    color: #eeeeee;
+}
+
+main{
+    width: 70%;
+    text-align: left;
+}
+
+h1{
+    font-family: 'Roboto Mono', monospace;
+    font-weight: 400;
+}
+h3{margin-top: 2%;}
+
+hr{
+    border: 1px solid rgb(105, 105, 105);
+}
+p{margin-left: 2px;}
+
+input{
+    background-color: rgb(105, 105, 105);
+    border: none;
+    color: white;
+    margin-bottom: 1%;
+    padding: 0.7%;
+    border-radius: 5px;
+    font-family: 'Roboto Mono', monospace;
+}
+
+input::placeholder {
+    color: rgb(201, 200, 200);
+  }
+.log_div{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-wrap: nowrap;
+}
+
+.error{
+    margin: 0;
+    margin-bottom: 1%;
+    color:red;
+    font-family: 'Roboto Mono', monospace;
+}
+
+.reg_btn{
+    color:#eeeeee;
+    background-color: rgb(105, 105, 105);
+    border: none;
+    padding: 7px;
+    border-radius: 5px;
+    font-size: 100%;
+    cursor: pointer;
+    font-family: 'Roboto Mono', monospace;
+}
+.reg_btn:hover{
+    background-color: rgb(78, 78, 78);
+}
+
+.change_page{
+    background: none;
+    color:#eeeeee;
+    border: none;
+    cursor: pointer;
+    margin-top: 3px;
+    font-family: 'Roboto Mono', monospace;
+}
+
+.change_page:hover{
+    color:#b9b9b9;
+}
+
+nav a{
+    cursor: pointer;
+    color: white;
+    text-decoration: none;
+}
+nav a:hover{
+    font-weight: 600;
+    text-decoration: underline dashed;
+}
+.selected{font-weight: 600;}
+@media(max-width: 425px){
+    main{width: 90%;}
+    h1{font-size: 130%;}
+    p{font-size: 90%;}
+    input{padding: 2%;}
+    .reg_btn{
+        font-size: 95%;
+        padding-top: 1.5%;
+        padding-bottom: 1.5%;
+    }
+}

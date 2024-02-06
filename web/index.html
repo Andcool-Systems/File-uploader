@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>File uploader</title>
+        <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@800&family=Roboto+Mono&display=swap" rel="stylesheet">
+        <link rel="icon" href="/favicon.ico" type="image/x-icon">
+        <link rel="stylesheet" href="style.css">
+        <link rel="preload" as="image" href="./res/globe_on.png">
+        <link rel="preload" as="image" href="./res/globe_off.png">
+        <link rel="preload" as="image" href="./res/external-link.svg">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <script src="login/script.js"></script>
+        <script src="script.js"></script>
+        <script src="snowflakes.js"></script>
+    </head>
+    <script>
+        function open_add(){
+            let add = document.getElementById('addit_sett');
+            let add_btn = document.getElementById('addit_sett_btn');
+            if (add.style.display == "none" || add.style.display == ""){ 
+                add.style.display = "block";
+                add_btn.innerHTML = "▲ Additional settings";
+            }
+            else{ 
+                add.style.display = "none";
+                add_btn.innerHTML = "▼ Additional settings";
+            }
+        }
+        function change_snow(){
+            
+            if(localStorage.getItem("disable_snow")){
+                localStorage.removeItem("disable_snow");
+                run_anim();
+            }
+            else {
+                localStorage.setItem("disable_snow", true);
+                stop_anim();
+            }
+        }
+        //const urlParams = new URLSearchParams(window.location.search);
+        //const myParam = urlParams.get('myParam');
+        //console.log(myParam);
+    </script>
+    <button onclick="change_snow()" id="snow_btn" title="Switch snow">*</button>
+    <div id="canvas">
+    </div>
+
+    <body id="dropContainer">
+        <main>
+            <h1>File uploader</h1>
+            <nav>
+                <a class="selected">Home</a>
+                <a href="https://fu.andcool.ru/login/" id="login_page_a">Login</a>
+                <a href="https://fu.andcool.ru/tos/" id="login_page_a">ToS</a>
+                <a id="login_page_a" href="https://fu.andcool.ru/uploaders/">Uploaders</a>
+                <a href="https://github.com/Andcool-Systems/File-uploader" target="_blank">GitHub</a>
+            </nav>
+            <hr>
+            <p style="margin-top: 0%;font-size: 80%;">by AndcoolSystems</p>
+            <p>
+                A simple file uploader based on Python FastAPI.<br/>
+                Insert files to start uploading. Maximum file size: 100MB</p>
+
+            <p id="login_mess">To access your files from any device, sign in. 
+                The files will be linked to your account and you will have full access to them.</p>
+            <button id="addit_sett_btn" onclick="open_add()">▼ Additional settings</button>
+            <div id="addit_sett">
+                <div>
+                    <input type="checkbox" id="include_ext" name="include_ext"/>
+                    <label for="include_ext" class="add_label">Include the file extension in the link</label>
+                </div>
+            </div>
+            <form method="post" enctype="multipart/form-data">
+                <label class="input-file">
+                       <input type="file" name="file" id="input_file">		
+                       <span>Choose file</span>
+                 </label>
+            </form>
+            
+            <div id="groups_selector" style="display: none;">
+                <p style="margin-bottom: 5px; margin-left: 0;">Select file group:</p>
+
+                <div style="display: flex; align-items: center; flex-direction: row; justify-content: flex-start;">
+                    <select id="groups">
+                        <option selected value="private">Private</option>
+                    </select>
+                    <button class="group_btn" title="Create new group" 
+                    onclick="document.getElementById('group_create_div').style.display = document.getElementById('group_create_div').style.display == 'none' ? 'block': 'none'">+</button>
+                    <button class="group_btn" id="leave">-</button>
+                    <button class="group_btn" title="Invite users" disabled id="invite_users" onclick="create_invite()"><image src="./res/user_plus.svg" style="width: 15px;"></image></button>
+                </div>
+            </div>
+            <div style="display: none;" id="invite_link_link">
+                <p style="margin-bottom: 5px; margin-top: 5px">Generated invite link:</p>
+                <p id="invite_link" style="margin: 0%; font-size: 90%; margin-left: 2px; cursor:pointer; overflow-wrap: anywhere;"></p>
+            </div>
+            <div id="group_create_div" style="display: none;">
+                <p style="margin-bottom: 5px; margin-left: 0;">Create group</p>
+                <input id="group_name" type="text" placeholder="Group name" maxlength="50" style="background-color: #222222; border: 2px rgb(105, 105, 105) solid;
+                border-radius: 10px; padding: 10px; color: white"></input>
+                <button class="button_creation_class" onclick="create_group()">Create</button>
+            </div>
+            <p id="load_mess"></p>
+            <table id="files_table">
+            </table>
+        </main>
+    </body>
+</html>

@@ -1,0 +1,18 @@
+datasource db {
+  // could be postgresql or mysql
+  provider = "sqlite"
+  url      = "file:dataBase.db"
+}
+
+generator db {
+  provider             = "prisma-client-py"
+  interface            = "asyncio"
+  recursive_type_depth = 5
+}
+
+model User {
+  id           Int     @id @default(autoincrement())
+  user_id      BigInt  @default(0)
+  username     String  @default("")
+  token        String  @default("")
+}
