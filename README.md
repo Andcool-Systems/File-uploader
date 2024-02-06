@@ -416,7 +416,7 @@ It takes the `Authorization` header containing the access token.
 ```json
 {
     "status": "success",
-    "message": "created",
+    "message": "Info got successfully",
     "name": "New group",
     "group_id": 12345678,
 }
