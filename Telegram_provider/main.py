@@ -10,13 +10,15 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.methods import DeleteWebhook
 from prisma import Prisma
 import os
+from dotenv import load_dotenv
 import time
 import asyncio
 import io
 import aiohttp
 
 """Создание всех нужных объектов"""
-bot = Bot(token="6423586916:AAF9HVUbtsiuE7I1UKn9QfMkn82KM8NHKLU")
+load_dotenv()
+bot = Bot(token=os.getenv("TOKEN"))
 dp = Dispatcher()
 db = Prisma()
 version = "beta 0.0.1"
