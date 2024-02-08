@@ -55,7 +55,7 @@ model Group{
 model Invitements{
     id           Int    @id @default(autoincrement())
     data         String @default("")
-    group        Group   @relation(fields: [group_id], references: [id])
+    group        Group  @relation(fields: [group_id], references: [id], onDelete: Cascade)
     group_id     Int    @default(0)
 }
 

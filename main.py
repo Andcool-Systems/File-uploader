@@ -453,9 +453,17 @@ async def register(request: Request, bot: bool = False):
 @limiter.limit(dynamic_limit_provider)
 async def login(request: Request, bot: bool = False):
     body = await request.json()
-    if (
-        "username" not in body or "password" not in body
-    ):  # If request body doesn't have username and password field
+    if ("username" not in body or "password" not in body):  # If request body doesn't have username and password field
+        return JSONResponse(
+            {
+                "status": "error",
+                "message": "No username/password provided",
+                "errorId": 2,
+            },
+            status_code=400,
+        )
+    
+    if not body["username"] or not body["password"]:
         return JSONResponse(
             {
                 "status": "error",
@@ -486,8 +494,8 @@ async def login(request: Request, bot: bool = False):
             "accessTokenSecret",
             algorithm="HS256",
         )
-        if len(user.tokens) > 10:  # If user have more than 10 tokens
-            await db.token.delete_many(where={"user_id": user.id})
+        #if len(user.tokens) > 10:  # If user have more than 10 tokens
+        #    await db.token.delete_many(where={"user_id": user.id})
 
         await db.token.create(
             {  # Create token record in db
@@ -509,7 +517,7 @@ async def login(request: Request, bot: bool = False):
     else:  # If password doesn't match
         return JSONResponse(
             {"status": "error", "message": "Wrong password", "errorId": 3},
-            status_code=400,
+            status_code=403,
         )
 
 

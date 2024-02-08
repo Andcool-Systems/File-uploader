@@ -155,7 +155,7 @@ Successful execution returns a `200` HTTP code, indicating successful registrati
 
 | errorId | HTTP code | message        | Reasons            |
 | ------- | --------- | -------------- | ------------------ |
-| 3       | 400       | Wrong password | Incorrect password |
+| 3       | 403       | Wrong password | Incorrect password |
 | 4       | 404       | User not found | Username not found |
 
 ### Refreshe the token
