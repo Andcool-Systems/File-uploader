@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 import time
 import asyncio
 import io
-import aiohttp
+import fileuploader
 
 """Создание всех нужных объектов"""
 load_dotenv()
@@ -29,25 +29,6 @@ class States(StatesGroup):
     wait_to_data = State()
     login_register = State()
 
-
-async def upload(bytes: bytearray, filename: str, user):
-    form_data = aiohttp.FormData()
-    form_data.add_field('file', bytes, filename=filename)
-    headers = {}
-    if user:
-        headers = {"Authorization": "Bearer " + user.token}
-
-    async with aiohttp.ClientSession("https://fu.andcool.ru") as session:
-        async with session.post(f"/api/upload/private", 
-                                data=form_data, headers=headers) as r:
-            return r, await r.json()
-
-
-async def get_files(token: str):
-    async with aiohttp.ClientSession("https://fu.andcool.ru") as session:
-        async with session.get(f"/api/get_files/private", headers={"Authorization": "Bearer " + token}) as r:
-            return r, await r.json()
-        
 
 async def send_login_message(message: types.Message):
     builder = InlineKeyboardBuilder()
@@ -85,26 +66,24 @@ async def account(message: types.Message, state: FSMContext):
         return
         
     else:
-        response, response_json = await get_files(user.token)
-        if response.status == 401:
+        try:
+            user_obj = await fileuploader.User.loginToken(user.token)
+            builder = InlineKeyboardBuilder()
+            builder.add(types.InlineKeyboardButton(
+                text="Log out",
+                callback_data=f"logout")
+            )
+
+            await message.answer(f"*Account:*\n*Username:* {user_obj.username}\n",
+                                reply_markup=builder.as_markup(), 
+                                parse_mode="Markdown")
+        except fileuploader.exceptions.NotAuthorized:
             await db.user.delete(where={"id": user.id})
             await send_login_message(message)
             return
-        
-        if response.status == 429:
+        except fileuploader.exceptions.TooManyRequests:
             await message.answer("Sorry, the servers are overloaded right now")
             return
- 
-        builder = InlineKeyboardBuilder()
-        builder.add(types.InlineKeyboardButton(
-            text="Log out",
-            callback_data=f"logout")
-        )
-
-        await message.answer(f"*Account:*\n*Username:* {user.username}\n" + \
-                              f"*Files on account:* {len(response_json['data'])}", 
-                            reply_markup=builder.as_markup(), 
-                            parse_mode="Markdown")
 
 
 @dp.callback_query(F.data.startswith("log_"))
@@ -125,45 +104,49 @@ async def log_reg(message: types.Message, state: FSMContext):
         await message.answer('The data was sent incorrectly')
         return
 
-    async with aiohttp.ClientSession("https://fu.andcool.ru") as session:
-        async with session.post(f"/api/{'login' if login_register == 'login' else 'register'}?bot=true", 
-                                json={"username": login_and_password[0],
-                                      "password": login_and_password[1]}) as r:
-            
-            await message.delete()
-            data_resp = await r.json()
-            if r.status == 400 or r.status == 404:
-                await message.answer(data_resp['message'])
-                return
-            
-            if r.status == 200:
-                await db.user.create(data={
+    try:
+        if login_register == 'login':
+            user = await fileuploader.User.login(login_and_password[0], login_and_password[1])
+        else:
+            user = await fileuploader.User.register(login_and_password[0], login_and_password[1])
+        
+        await db.user.create(data={
                     "user_id": message.from_user.id,
-                    "username": data_resp['username'],
-                    'token': data_resp['accessToken']
-                })
-                await account(message, state)
-                await state.clear()
-                return
-
-            await message.answer("Unhandled error")
-            return
+                    "username": user.username,
+                    'token': user.accessToken
+        })
+        await account(message, state)
+        await state.clear()
+        return
+    except fileuploader.exceptions.UserAreadyRegistered:
+        await message.answer("User with this username was already registered")
+        return
+    except fileuploader.exceptions.WrongPassword:
+        await message.answer("Wrong password")
+        return
+    except fileuploader.exceptions.UserNotFound:
+        await message.answer("User not found")
+        return
+    finally:
+        await message.delete()
 
 
 @dp.callback_query(F.data == "logout")
 async def log(callback: types.CallbackQuery, state: FSMContext):
-    user = await db.user.find_first(where={"user_id": callback.from_user.id})
-    if not user:
+    user_db = await db.user.find_first(where={"user_id": callback.from_user.id})
+    if not user_db:
         await callback.message.answer("You are not logged in")
         return
 
-    async with aiohttp.ClientSession("https://fu.andcool.ru") as session:
-        async with session.get(f"/api/logout", headers={"Authorization": "Bearer " + user.token}) as response:
-            if response.status == 401 or response.status == 200:
-                await db.user.delete(where={"id": user.id})
-                await callback.message.answer("Logged out!")
-                await callback.message.delete()
-                return
+    user = fileuploader.User.User()
+    user.accessToken = user_db.token
+    try:
+        await user.logout()
+    finally:
+        await db.user.delete(where={"id": user_db.id})
+        await callback.message.answer("Logged out!")
+        await callback.message.delete()
+        return
 
 
 @dp.message(F.content_type.in_({'document', 'photo', 'video', 'animation', 'video_note', 'voice', 'text'}))
@@ -235,22 +218,32 @@ async def send_file(message: types.Message, state: FSMContext):
             filename = 'text.txt'
 
     user = await db.user.find_first(where={"user_id": message.from_user.id})
-    response, result = await upload(file_bytes, filename, user)
+    user_obj = fileuploader.User.User(user.token)
 
-    if response.status != 200:
-        error = result['error'] if response.status == 429 else result['message']
-        await message.reply(error)
+    try:
+        file = await fileuploader.upload(file_bytes, filename, user=user_obj)
+        builder = InlineKeyboardBuilder()
+        builder.add(types.InlineKeyboardButton(
+            text="Delete file",
+            callback_data=f"delete_{file.file_url}_{file.key}")
+        )
+
+        await message.reply(f"*Your file has been uploaded.!*\n*Link:* {file.file_url_full}\n*Size:* {file.size}", 
+                            reply_markup=builder.as_markup(), 
+                            parse_mode="Markdown")
+        
+    except fileuploader.exceptions.FileSizeExceedsTheLimit:
+        await message.reply("File size exceeds the limit (100MB)")
         return
-
-    builder = InlineKeyboardBuilder()
-    builder.add(types.InlineKeyboardButton(
-        text="Delete file",
-        callback_data=f"delete_{result['file_url']}_{result['key']}")
-    )
-
-    await message.reply(f"*Your file has been uploaded.!*\n*Link:* {result['file_url_full']}\n*Size:* {result['size']}", 
-                        reply_markup=builder.as_markup(), 
-                        parse_mode="Markdown")
+    except fileuploader.exceptions.InvalidGroup:
+        await message.reply("Invalid group")
+        return
+    except fileuploader.exceptions.GroupNotFound:
+        await message.reply("Group not found")
+        return
+    except fileuploader.exceptions.YouAreNotInTheGroup:
+        await message.reply("You are not in the group")
+        return
 
 
 @dp.callback_query(F.data.startswith("delete_"))
@@ -258,15 +251,15 @@ async def delete_file(callback: types.CallbackQuery, state: FSMContext):
     """Хэндлер для колбэка кнопок выбора удаления"""
 
     file_data = callback.data.replace("delete_", "").split("_")
-    async with aiohttp.ClientSession("https://fu.andcool.ru") as session:
-        async with session.get(f"/api/delete/{file_data[0]}?key={file_data[1]}") as r:
-            response = await r.json()
-            if response['status'] == 'success':
-                await callback.message.delete()
-                await callback.message.answer("File has been deleted!")
-            else:
-                await callback.message.answer(response['message'])
-
+    try:
+        await fileuploader.delete(file_data[0], file_data[1])
+        await callback.message.delete()
+        await callback.message.answer("File has been deleted!")
+    
+    except fileuploader.exceptions.FileNotFound:
+        await callback.message.answer("File not found")
+    except fileuploader.exceptions.InvalidUniqueKey:
+        await callback.message.answer("Error while deleting file")
 
 async def start():
     """Асинхронная функция для запуска диспатчера"""

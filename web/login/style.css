@@ -86,6 +86,17 @@ nav a:hover{
     text-decoration: underline dashed;
 }
 .selected{font-weight: 600;}
+
+.discord{
+    cursor: pointer;
+    color: white;
+    text-decoration: none;
+
+}
+.discord:hover{
+    text-decoration: underline dashed;
+}
+
 @media(max-width: 425px){
     main{width: 90%;}
     h1{font-size: 130%;}

@@ -115,6 +115,7 @@
             const host = window.location.host;
             window.location.replace(protocol + "//" + host + page_url);
         }
+        
         function parseJwt (token) {
             var base64Url = token.split('.')[1];
             var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -130,6 +131,17 @@
             res = parseJwt(token);
             
             return (parseInt(res["ExpiresAt"]) - 259200) > secondsSinceEpoch;
+        }
+
+        async function get_new_tokens(accessToken) {
+            try {
+                let response = await axios.post(api_url + "/api/refresh_token", { 'accessToken': "Bearer " + accessToken }, {})
+                if (!response) return false;
+                if (response.status != 200) return false;
+                return response.data.accessToken;
+            } catch {
+                return false;
+            }
         }
 
         async function fetch_info(invite_link) {

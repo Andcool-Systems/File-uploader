@@ -19,5 +19,6 @@ from dotenv import load_dotenv
 import jwt
 import bcrypt
 import random
+import json
 
 rate_limit_exceeded_handler = _rate_limit_exceeded_handler

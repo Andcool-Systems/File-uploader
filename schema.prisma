@@ -29,16 +29,18 @@ model file {
 }
 
 model User {
-  id         Int     @id @default(autoincrement())
-  username   String  @default("")
-  password   String  @default("")
-  tokens     Token[]
-  groups     Group[]
+  id          Int     @id @default(autoincrement())
+  username    String  @default("")
+  password    String  @default("")
+  discord_uid BigInt @default(-1)
+  tokens      Token[]
+  groups      Group[]
 }
 
 model Token{
     id          Int    @id @default(autoincrement())
     accessToken String @default("")
+    fingerprint String @default("None")
     user        User   @relation(fields: [user_id], references: [id])
     user_id     Int    @default(0)
 }

@@ -3,7 +3,7 @@
   "Name": "File uploader",
   "DestinationType": "ImageUploader, FileUploader",
   "RequestMethod": "POST",
-  "RequestURL": "https://fu.andcool.ru/api/upload",
+  "RequestURL": "https://fu.andcool.ru/api/upload/private",
   "Parameters": {
     "include_ext": "true"
   },

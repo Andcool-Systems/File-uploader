@@ -58,7 +58,7 @@ async def api(request: Request):
     )
 
 
-async def check_token(Authorization):
+async def check_token(Authorization, user_agent):
     if not Authorization:  # If token doesn't provided
         return None, {"message": "No Authorization header provided", "errorId": -1}
 
@@ -86,6 +86,10 @@ async def check_token(Authorization):
     if token["ExpiresAt"] < time.time():  # If token expired
         await db.token.delete(where={"id": token_db.id})
         return None, {"message": "Access token expired", "errorId": -3}
+    
+    if user_agent != token_db.fingerprint and token_db.fingerprint != "None":
+        await db.token.delete(where={"id": token_db.id})
+        return None, {"message": "Invalid fingerprint", "errorId": -6}
 
     return token_db, {}
 
@@ -104,9 +108,8 @@ async def upload_file(
     request: Request,
     include_ext: bool = False,
     max_uses: int = 0,
-    Authorization: Annotated[
-        Union[str, None], Header(convert_underscores=False)
-    ] = None,
+    Authorization: Annotated[Union[str, None], Header(convert_underscores=False)] = None,
+    user_agent: Union[str, None] = Header(default=None)
 ):
 
     if not file:  # Check, if the file is uploaded
@@ -132,7 +135,7 @@ async def upload_file(
     saved_to_account = False
     user_id = -1
 
-    token_db, auth_error = await check_token(Authorization)  # Check token
+    token_db, auth_error = await check_token(Authorization, user_agent)  # Check token
     if token_db:  # If token is okay
         saved_to_account = True
         user_id = token_db.user.id
@@ -303,11 +306,10 @@ async def delete_file(url: str, key: str = ""):
 async def getFiles(
     group_id: str,
     request: Request,
-    Authorization: Annotated[
-        Union[str, None], Header(convert_underscores=False)
-    ] = None,
+    Authorization: Annotated[Union[str, None], Header(convert_underscores=False)] = None,
+    user_agent: Union[str, None] = Header(default=None)
 ):
-    token_db, auth_error = await check_token(Authorization)  # Check token validity
+    token_db, auth_error = await check_token(Authorization, user_agent)  # Check token validity
     if not token_db:  # If token is not valid
         return JSONResponse(
             content={
@@ -385,11 +387,19 @@ async def getFiles(
 
 @app.post("/api/register")  # Registartion handler
 @limiter.limit(dynamic_limit_provider)
-async def register(request: Request, bot: bool = False):
-    body = await request.json()
-    if (
-        "username" not in body or "password" not in body
-    ):  # If request body doesn't have username and password field
+async def register(request: Request, bot: bool = False, user_agent: Union[str, None] = Header(default=None)):
+    try:
+        body = await request.json()
+    except json.decoder.JSONDecodeError:
+        return JSONResponse(
+            {
+                "status": "error",
+                "message": "No username/password provided",
+                "errorId": 2,
+            },
+            status_code=400,
+        )
+    if ("username" not in body or "password" not in body):  # If request body doesn't have username and password field
         return JSONResponse(
             {
                 "status": "error",
@@ -431,6 +441,7 @@ async def register(request: Request, bot: bool = False):
     await db.token.create(
         {  # Create token record in db
             "accessToken": access,
+            "fingerprint": user_agent,
             "user": {
                 "connect": {
                     "id": user.id,
@@ -449,10 +460,128 @@ async def register(request: Request, bot: bool = False):
     )
 
 
+@app.get("/api/login/token")  # login by token handler
+@limiter.limit(dynamic_limit_provider)
+async def login_token(request: Request, 
+                      Authorization: Annotated[Union[str, None], Header(convert_underscores=False)] = None, 
+                      user_agent: Union[str, None] = Header(default=None)):
+    token_db, auth_error = await check_token(Authorization, user_agent)  # Check token validity
+    if not token_db:  # If token is not valid
+        return JSONResponse(
+            content={
+                "status": "error",
+                "message": "Auth error",
+                "auth_error": auth_error,
+            },
+            status_code=401,
+    )
+    return JSONResponse({"status": "success",
+                         "message": "Logged in by token",
+                         "username": token_db.user.username,
+                         "accessToken": token_db.accessToken})
+
+
+@app.post("/api/login/discord/{code}")  # login handler
+@limiter.limit(dynamic_limit_provider)
+async def login(code: str, 
+                request: Request,
+                user_agent: Union[str, None] = Header(default=None)):
+    
+    data = {
+        'grant_type': 'authorization_code',
+        'code': code,
+        'redirect_uri': "https://fu.andcool.ru/login/discord"
+    }
+    headers = {
+        'Content-Type': 'application/x-www-form-urlencoded'
+    }
+
+    auth = aiohttp.BasicAuth(login=os.getenv("DISCORD_CLIENT_ID"), password=os.getenv("DISCORD_CLIENT_SECRET"))
+
+    response_json = {}
+    async with aiohttp.ClientSession() as session:
+        async with session.post(f'https://discord.com/api/v10/oauth2/token', data=data, headers=headers, auth=auth) as response:
+            response_json = await response.json()
+            if response.status != 200:
+                return JSONResponse({"status": "error", "message": "Internal error, please, log in again"}, status_code=401)
+
+            async with session.get('https://discord.com/api/users/@me', 
+                                   headers={"Authorization": f"{response_json['token_type']} {response_json['access_token']}"}) as response_second:
+                if response_second.status != 200:
+                    return JSONResponse({"status": "error", "message": "Invalid token, please, log in again"}, status_code=401)
+                response_user_json = await response_second.json()
+                user_check = await db.user.find_first(where={"discord_uid": response_user_json["id"]})
+
+                if not user_check:
+                    user = await db.user.create(  # Create user record in db
+                        {"username": str(response_user_json["global_name"]), "password": "None", "discord_uid": response_user_json["id"]}
+                    )
+                    access = jwt.encode(
+                        {
+                            "user_id": int(user.id),
+                            "ExpiresAt": time.time() + accesLifeTime,
+                        },
+                        "accessTokenSecret",
+                        algorithm="HS256",
+                    )  # Generate token
+
+                    await db.token.create(
+                        {  # Create token record in db
+                            "accessToken": access,
+                            "fingerprint": user_agent,
+                            "user": {
+                                "connect": {
+                                    "id": user.id,
+                                },
+                            },
+                        }
+                    )
+                else:
+                    access = jwt.encode(
+                        {
+                            "user_id": int(user_check.id),
+                            "ExpiresAt": time.time() + accesLifeTime,
+                        },
+                        "accessTokenSecret",
+                        algorithm="HS256",
+                    )  # Generate token
+
+                    await db.token.create(
+                        {  # Create token record in db
+                            "accessToken": access,
+                            "fingerprint": user_agent,
+                            "user": {
+                                "connect": {
+                                    "id": user_check.id,
+                                },
+                            },
+                        }
+                    )
+                
+                return JSONResponse(
+                    {
+                        "status": "success",
+                        "accessToken": access,
+                        "username": response_user_json["global_name"],
+                        "message": "registred" if not user_check else "logged in",
+                    },
+                    status_code=200,
+                )
+
 @app.post("/api/login")  # login handler
 @limiter.limit(dynamic_limit_provider)
-async def login(request: Request, bot: bool = False):
-    body = await request.json()
+async def login(request: Request, bot: bool = False, user_agent: Union[str, None] = Header(default=None)):
+    try:
+        body = await request.json()
+    except json.decoder.JSONDecodeError:
+        return JSONResponse(
+            {
+                "status": "error",
+                "message": "No username/password provided",
+                "errorId": 2,
+            },
+            status_code=400,
+        )
     if ("username" not in body or "password" not in body):  # If request body doesn't have username and password field
         return JSONResponse(
             {
@@ -474,7 +603,11 @@ async def login(request: Request, bot: bool = False):
         )
 
     user = await db.user.find_first(
-        where={"username": body["username"]}, include={"tokens": True}
+        where={'AND': [
+                    {"username": body["username"]},
+                    {'NOT':[{"password": "None"}]}
+                ]
+            }, include={"tokens": True}
     )  # Find same username in db
     if not user:  # If user doesn't exists
         return JSONResponse(
@@ -482,9 +615,7 @@ async def login(request: Request, bot: bool = False):
             status_code=404,
         )
 
-    if bcrypt.checkpw(
-        bytes(body["password"], "utf-8"), bytes(user.password, "utf-8")
-    ):  # If password is correct
+    if bcrypt.checkpw(bytes(body["password"], "utf-8"), bytes(user.password, "utf-8")):  # If password is correct
         access = jwt.encode(
             {
                 "user_id": int(user.id),
@@ -500,6 +631,7 @@ async def login(request: Request, bot: bool = False):
         await db.token.create(
             {  # Create token record in db
                 "accessToken": access,
+                "fingerprint": user_agent,
                 "user": {
                     "connect": {
                         "id": user.id,
@@ -523,7 +655,7 @@ async def login(request: Request, bot: bool = False):
 
 @app.post("/api/refresh_token")  # refresh token handler
 @limiter.limit(dynamic_limit_provider)
-async def refresh_token(request: Request):
+async def refresh_token(request: Request, user_agent: Union[str, None] = Header(default=None)):
     body = await request.json()
     if "accessToken" not in body:  # If token doesn't provided
         return JSONResponse(
@@ -531,9 +663,7 @@ async def refresh_token(request: Request):
             status_code=400,
         )
 
-    token_db, auth_error = await check_token(
-        body["accessToken"]
-    )  # Check token validity
+    token_db, auth_error = await check_token(body["accessToken"], user_agent)  # Check token validity
     if not token_db:  # If token is not valid
         return JSONResponse(
             content={
@@ -560,12 +690,11 @@ async def refresh_token(request: Request):
 @limiter.limit(dynamic_limit_provider)
 async def logout(
     request: Request,
-    Authorization: Annotated[
-        Union[str, None], Header(convert_underscores=False)
-    ] = None,
+    Authorization: Annotated[Union[str, None], Header(convert_underscores=False)] = None,
+    user_agent: Union[str, None] = Header(default=None)
 ):
 
-    token_db, auth_error = await check_token(Authorization)  # Check token validity
+    token_db, auth_error = await check_token(Authorization, user_agent)  # Check token validity
     if not token_db:  # If token is not valid
         return JSONResponse(
             content={
@@ -585,12 +714,11 @@ async def logout(
 @limiter.limit(dynamic_limit_provider)
 async def transfer(
     request: Request,
-    Authorization: Annotated[
-        Union[str, None], Header(convert_underscores=False)
-    ] = None,
+    Authorization: Annotated[Union[str, None], Header(convert_underscores=False)] = None,
+    user_agent: Union[str, None] = Header(default=None)
 ):
 
-    token_db, auth_error = await check_token(Authorization)  # Check token validity
+    token_db, auth_error = await check_token(Authorization, user_agent)  # Check token validity
     if not token_db:  # If token is not valid
         return JSONResponse(
             content={
@@ -639,9 +767,8 @@ async def transfer(
 @limiter.limit(dynamic_limit_provider)
 async def create_group(
     request: Request,
-    Authorization: Annotated[
-        Union[str, None], Header(convert_underscores=False)
-    ] = None,
+    Authorization: Annotated[Union[str, None], Header(convert_underscores=False)] = None,
+    user_agent: Union[str, None] = Header(default=None)
 ):
 
     body = await request.json()
@@ -650,7 +777,7 @@ async def create_group(
             {"status": "error", "message": "No `group_name` provided"}, status_code=400
         )
 
-    token_db, auth_error = await check_token(Authorization)  # Check token validity
+    token_db, auth_error = await check_token(Authorization, user_agent)  # Check token validity
     if not token_db:  # If token is not valid
         return JSONResponse(
             content={
@@ -692,12 +819,11 @@ async def create_group(
 async def delete_group(
     group_id: int,
     request: Request,
-    Authorization: Annotated[
-        Union[str, None], Header(convert_underscores=False)
-    ] = None,
+    Authorization: Annotated[Union[str, None], Header(convert_underscores=False)] = None,
+    user_agent: Union[str, None] = Header(default=None)
 ):
 
-    token_db, auth_error = await check_token(Authorization)  # Check token validity
+    token_db, auth_error = await check_token(Authorization, user_agent)  # Check token validity
     if not token_db:  # If token is not valid
         return JSONResponse(
             content={
@@ -733,12 +859,11 @@ async def delete_group(
 async def generate_invite(
     group_id: int,
     request: Request,
-    Authorization: Annotated[
-        Union[str, None], Header(convert_underscores=False)
-    ] = None,
+    Authorization: Annotated[Union[str, None], Header(convert_underscores=False)] = None,
+    user_agent: Union[str, None] = Header(default=None)
 ):
 
-    token_db, auth_error = await check_token(Authorization)  # Check token validity
+    token_db, auth_error = await check_token(Authorization, user_agent)  # Check token validity
     if not token_db:  # If token is not valid
         return JSONResponse(
             content={
@@ -780,12 +905,11 @@ async def generate_invite(
 async def delete_group(
     invite_link: str,
     request: Request,
-    Authorization: Annotated[
-        Union[str, None], Header(convert_underscores=False)
-    ] = None,
+    Authorization: Annotated[Union[str, None], Header(convert_underscores=False)] = None,
+    user_agent: Union[str, None] = Header(default=None)
 ):
 
-    token_db, auth_error = await check_token(Authorization)  # Check token validity
+    token_db, auth_error = await check_token(Authorization, user_agent)  # Check token validity
     if not token_db:  # If token is not valid
         return JSONResponse(
             content={
@@ -837,12 +961,11 @@ async def delete_group(
 async def delete_group(
     invite_link: str,
     request: Request,
-    Authorization: Annotated[
-        Union[str, None], Header(convert_underscores=False)
-    ] = None,
+    Authorization: Annotated[Union[str, None], Header(convert_underscores=False)] = None,
+    user_agent: Union[str, None] = Header(default=None)
 ):
 
-    token_db, auth_error = await check_token(Authorization)  # Check token validity
+    token_db, auth_error = await check_token(Authorization, user_agent)  # Check token validity
     if not token_db:  # If token is not valid
         return JSONResponse(
             content={
@@ -874,12 +997,11 @@ async def delete_group(
 async def delete_group(
     group_id: int,
     request: Request,
-    Authorization: Annotated[
-        Union[str, None], Header(convert_underscores=False)
-    ] = None,
+    Authorization: Annotated[Union[str, None], Header(convert_underscores=False)] = None,
+    user_agent: Union[str, None] = Header(default=None)
 ):
 
-    token_db, auth_error = await check_token(Authorization)  # Check token validity
+    token_db, auth_error = await check_token(Authorization, user_agent)  # Check token validity
     if not token_db:  # If token is not valid
         return JSONResponse(
             content={
@@ -915,12 +1037,11 @@ async def delete_group(
 @limiter.limit(dynamic_limit_provider)
 async def get_groups(
     request: Request,
-    Authorization: Annotated[
-        Union[str, None], Header(convert_underscores=False)
-    ] = None,
+    Authorization: Annotated[Union[str, None], Header(convert_underscores=False)] = None,
+    user_agent: Union[str, None] = Header(default=None)
 ):
 
-    token_db, auth_error = await check_token(Authorization)  # Check token validity
+    token_db, auth_error = await check_token(Authorization, user_agent)  # Check token validity
     if not token_db:  # If token is not valid
         return JSONResponse(
             content={

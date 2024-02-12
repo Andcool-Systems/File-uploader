@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <title>File uploader</title>
+        <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@800&family=Roboto+Mono&display=swap" rel="stylesheet">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="icon" type="image/x-icon" href="https://fu.andcool.ru/favicon.ico">
+    </head>
+    <style>
+        body{
+            font-family: 'Roboto Mono', monospace;
+            display: flex;
+            justify-content: center;
+            background-color: #222222;
+            color: #eeeeee;
+            height: 100%;
+            overflow-x: hidden;
+        }
+
+        main{
+            width: 70%;
+            text-align: left;
+        }
+
+        #main_div{
+            text-align: center;
+        }
+        #second_div{
+            display: flex;
+            justify-content: center;
+        }
+        h1{
+            font-family: 'Roboto Mono', monospace;
+            font-weight: 400;
+        }
+
+        pre{
+            font-family: 'Roboto Mono', monospace;
+            font-weight: 400;
+            font-size: 80%;
+            text-align: left;
+        }
+
+        hr{
+            border: 1px solid rgb(105, 105, 105);
+        }
+        p{
+            font-size: 100%;
+        }
+
+
+        nav a{
+            cursor: pointer;
+            color: white;
+            text-decoration: none;
+        }
+        nav a:hover{
+            font-weight: 600;
+            text-decoration: underline dashed;
+        }
+
+        #login_mess{
+            font-style: italic;
+        }
+        #join_butt{
+            font-family: 'Roboto Mono', monospace;
+            background-color: #222222; 
+            border: 2px rgb(105, 105, 105) solid;
+            border-radius: 10px; 
+            padding: 10px; 
+            color: white; 
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 100%;
+        }
+
+        #join_butt:hover{
+            background-color: rgb(109, 109, 109);
+            transition: background-color 0.2s;
+        }
+
+        @media(max-width: 425px){
+            main{width: 90%;}
+            h1{font-size: 130%;}
+            p{font-size: 90%;}
+            pre{font-size: 50%;}
+        }
+    </style>
+    <body>
+        <main>
+            <h1>File uploader</h1>
+            <nav>
+                <a href="https://fu.andcool.ru">Home</a>
+                <a href="https://fu.andcool.ru/tos/">ToS</a>
+                <a href="https://github.com/Andcool-Systems/File-uploader" target="_blank">GitHub</a>
+            </nav>
+            <hr>
+            <div id="main_div">
+                <h1 id="error" style="font-size: 130%;">Loading...</h1>
+            </div>
+        </main>
+    </body>
+
+    <script>
+        //let api_url = "http://127.0.0.1:8080"; //!!!!!!!!!!!!!!!!!!!!!!!!!!
+        let api_url = "https://fu.andcool.ru";
+
+        function moveToPage(page_url){
+            const protocol = window.location.protocol;
+            const host = window.location.host;
+            window.location.replace(protocol + "//" + host + page_url);
+        }
+
+        async function login() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            let h1 = document.getElementById("error");
+            if (!code) moveToPage("/");
+            try {
+                let response = await axios.post(api_url + "/api/login/discord/" + code)
+                if (!response) h1.innerHTML = "Server answered with error, please, log in again"
+                if (response.status == 200) {
+                    localStorage.setItem("accessToken", response.data.accessToken);
+                    moveToPage("/");
+                }
+            } catch (e){
+                console.log(e)
+                if (e.response){
+                    document.getElementById("error").innerHTML = e.response.data.message;
+                }
+            }
+        }
+
+        
+        addEventListener("DOMContentLoaded", (event) => {
+            login();
+        })
+    </script>
+</html>
