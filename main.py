@@ -228,7 +228,7 @@ async def upload_file(
 @limiter.limit(dynamic_limit_provider)
 async def send_file(url: str, request: Request):
     result = await db.file.find_first(where={"url": url})  # Get file by url
-    if not result:
+    if not result or not os.path.isfile(result.filename):
         async with aiofiles.open("404.html", mode="rb") as f:
             return Response(
                 await f.read(), media_type="text/html", status_code=404
@@ -271,7 +271,7 @@ async def delete_file(url: str, key: str = ""):
     result = await db.file.find_first(where={"url": url})  # Get file record by url
     if not result:
         return JSONResponse(
-            content={"status": "error", "message": "File not found"}, status_code=200
+            content={"status": "error", "message": "File not found"}, status_code=404
         )  # if file does'n exists
 
     if result.key == key:  # If provided key matched with key from database record
@@ -568,6 +568,7 @@ async def login(code: str,
                     status_code=200,
                 )
 
+
 @app.post("/api/login")  # login handler
 @limiter.limit(dynamic_limit_provider)
 async def login(request: Request, bot: bool = False, user_agent: Union[str, None] = Header(default=None)):
@@ -625,8 +626,6 @@ async def login(request: Request, bot: bool = False, user_agent: Union[str, None
             "accessTokenSecret",
             algorithm="HS256",
         )
-        #if len(user.tokens) > 10:  # If user have more than 10 tokens
-        #    await db.token.delete_many(where={"user_id": user.id})
 
         await db.token.create(
             {  # Create token record in db
@@ -679,8 +678,8 @@ async def refresh_token(request: Request, user_agent: Union[str, None] = Header(
         "accessTokenSecret",
         algorithm="HS256",
     )  # Generate new token
-    await db.token.update(
-        where={"id": token_db.id}, data={"accessToken": access}  # Replace old token
+    await db.token.update(where={"id": token_db.id}, 
+                          data={"accessToken": access}  # Replace old token
     )
 
     return {"status": "success", "accessToken": access, "message": "token refreshed"}
