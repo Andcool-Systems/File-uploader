@@ -21,13 +21,14 @@ load_dotenv()
 bot = Bot(token=os.getenv("TOKEN"))
 dp = Dispatcher()
 db = Prisma()
-version = "beta 0.0.1"
+version = "beta 0.3.1"
 
 class States(StatesGroup):
     """Стейты для aiogram"""
 
     wait_to_data = State()
     login_register = State()
+    info_messages = State()
 
 
 async def send_login_message(message: types.Message):
@@ -65,38 +66,38 @@ async def account(message: types.Message, state: FSMContext):
         await send_login_message(message)
         return
         
-    else:
-        try:
-            user_obj = await fileuploader.User.loginToken(user.token)
-            builder = InlineKeyboardBuilder()
-            builder.add(types.InlineKeyboardButton(
-                text="Log out",
-                callback_data=f"logout")
-            )
+    try:
+        await bot.send_chat_action(chat_id=message.chat.id, action="typing")
+        user_obj = await fileuploader.User.loginToken(user.token)
+        builder = InlineKeyboardBuilder()
+        builder.add(types.InlineKeyboardButton(
+            text="Log out",
+            callback_data=f"logout")
+        )
 
-            await message.answer(f"*Account:*\n*Username:* {user_obj.username}\n",
-                                reply_markup=builder.as_markup(), 
-                                parse_mode="Markdown")
-        except fileuploader.exceptions.NotAuthorized:
-            await db.user.delete(where={"id": user.id})
-            await send_login_message(message)
-            return
-        except fileuploader.exceptions.TooManyRequests:
-            await message.answer("Sorry, the servers are overloaded right now")
-            return
+        await message.answer(f"Logged in as **{user_obj.username}**\n",
+                            reply_markup=builder.as_markup(), 
+                            parse_mode="Markdown")
+    except fileuploader.exceptions.NotAuthorized:
+        await db.user.delete(where={"id": user.id})
+        await send_login_message(message)
+        return
 
 
 @dp.callback_query(F.data.startswith("log_"))
 async def log(callback: types.CallbackQuery, state: FSMContext):
     await callback.message.delete()
-    await callback.message.answer(f"OK, now send me the data from your account in the format:\n```\nMy cool username\nMy cool password```", 
+    message = await callback.message.answer(f"OK, now send me the data from your account in the format:\n```\nMy cool username\nMy cool password```", 
                                 parse_mode="Markdown")
     await state.set_state(States.wait_to_data)
     await state.update_data(login_register=callback.data.replace("log_", ""))
+    await state.update_data(info_messages=message)
 
 
 @dp.message(F.text, States.wait_to_data)
 async def log_reg(message: types.Message, state: FSMContext):
+    await (await state.get_data())["info_messages"].delete()
+    await message.delete()
     login_register = (await state.get_data())["login_register"]
     login_and_password = message.text.replace('`', '').split("\n")
 
@@ -105,6 +106,7 @@ async def log_reg(message: types.Message, state: FSMContext):
         return
 
     try:
+        await bot.send_chat_action(chat_id=message.chat.id, action="typing")
         if login_register == 'login':
             user = await fileuploader.User.login(login_and_password[0], login_and_password[1])
         else:
@@ -118,17 +120,9 @@ async def log_reg(message: types.Message, state: FSMContext):
         await account(message, state)
         await state.clear()
         return
-    except fileuploader.exceptions.UserAreadyRegistered:
-        await message.answer("User with this username was already registered")
+    except Exception as e:
+        await message.answer("❌Auth error: " + str(e))
         return
-    except fileuploader.exceptions.WrongPassword:
-        await message.answer("Wrong password")
-        return
-    except fileuploader.exceptions.UserNotFound:
-        await message.answer("User not found")
-        return
-    finally:
-        await message.delete()
 
 
 @dp.callback_query(F.data == "logout")
@@ -141,11 +135,11 @@ async def log(callback: types.CallbackQuery, state: FSMContext):
     user = fileuploader.User.User()
     user.accessToken = user_db.token
     try:
+        await bot.send_chat_action(chat_id=callback.message.chat.id, action="typing")
         await user.logout()
     finally:
         await db.user.delete(where={"id": user_db.id})
-        await callback.message.answer("Logged out!")
-        await callback.message.delete()
+        await callback.message.edit_text("Logged out!")
         return
 
 
@@ -153,6 +147,7 @@ async def log(callback: types.CallbackQuery, state: FSMContext):
 async def send_file(message: types.Message, state: FSMContext):
     """Хэндлер для файлов"""
 
+    await bot.send_chat_action(chat_id=message.chat.id, action="typing")
     match message.content_type:
         case "document":
             document = message.document
@@ -218,7 +213,7 @@ async def send_file(message: types.Message, state: FSMContext):
             filename = 'text.txt'
 
     user = await db.user.find_first(where={"user_id": message.from_user.id})
-    user_obj = fileuploader.User.User(user.token)
+    user_obj = fileuploader.User.User(user.token) if user else None
 
     try:
         file = await fileuploader.upload(file_bytes, filename, user=user_obj)
@@ -227,22 +222,13 @@ async def send_file(message: types.Message, state: FSMContext):
             text="Delete file",
             callback_data=f"delete_{file.file_url}_{file.key}")
         )
-
-        await message.reply(f"*Your file has been uploaded.!*\n*Link:* {file.file_url_full}\n*Size:* {file.size}", 
+        logged_string = f'_Logged in as {user.username}_\n\n' if user else ''
+        await message.answer(f"{logged_string}*Your file has been uploaded!*\n*Link:* {file.file_url_full}\n*Size:* {file.size}", 
                             reply_markup=builder.as_markup(), 
                             parse_mode="Markdown")
-        
-    except fileuploader.exceptions.FileSizeExceedsTheLimit:
-        await message.reply("File size exceeds the limit (100MB)")
-        return
-    except fileuploader.exceptions.InvalidGroup:
-        await message.reply("Invalid group")
-        return
-    except fileuploader.exceptions.GroupNotFound:
-        await message.reply("Group not found")
-        return
-    except fileuploader.exceptions.YouAreNotInTheGroup:
-        await message.reply("You are not in the group")
+        await message.delete()
+    except Exception as e:
+        await message.reply("❌Upload error: " + str(e))
         return
 
 
@@ -250,16 +236,15 @@ async def send_file(message: types.Message, state: FSMContext):
 async def delete_file(callback: types.CallbackQuery, state: FSMContext):
     """Хэндлер для колбэка кнопок выбора удаления"""
 
+    await bot.send_chat_action(chat_id=callback.message.chat.id, action="typing")
     file_data = callback.data.replace("delete_", "").split("_")
     try:
         await fileuploader.delete(file_data[0], file_data[1])
-        await callback.message.delete()
-        await callback.message.answer("File has been deleted!")
+        await callback.message.edit_text(f"File `{file_data[0]}` has been deleted!", 
+                                        parse_mode="Markdown")
     
-    except fileuploader.exceptions.FileNotFound:
-        await callback.message.answer("File not found")
-    except fileuploader.exceptions.InvalidUniqueKey:
-        await callback.message.answer("Error while deleting file")
+    except Exception as e:
+        await callback.message.edit_text("❌Delete error: " + str(e))
 
 async def start():
     """Асинхронная функция для запуска диспатчера"""

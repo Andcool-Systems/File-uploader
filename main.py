@@ -432,7 +432,7 @@ async def register(request: Request, bot: bool = False, user_agent: Union[str, N
     access = jwt.encode(
         {
             "user_id": int(user.id),
-            "ExpiresAt": time.time() + (accesLifeTime if not bot else accesLifeTimeBot),
+            "ExpiresAt": time.time() + (accessLifeTime if not bot else accessLifeTimeBot),
         },
         "accessTokenSecret",
         algorithm="HS256",
@@ -514,12 +514,14 @@ async def login(code: str,
 
                 if not user_check:
                     user = await db.user.create(  # Create user record in db
-                        {"username": str(response_user_json["global_name"]), "password": "None", "discord_uid": response_user_json["id"]}
+                        {"username": str(response_user_json["global_name"]), 
+                         "password": "None", 
+                         "discord_uid": response_user_json["id"]}
                     )
                     access = jwt.encode(
                         {
                             "user_id": int(user.id),
-                            "ExpiresAt": time.time() + accesLifeTime,
+                            "ExpiresAt": time.time() + accessLifeTime,
                         },
                         "accessTokenSecret",
                         algorithm="HS256",
@@ -540,7 +542,7 @@ async def login(code: str,
                     access = jwt.encode(
                         {
                             "user_id": int(user_check.id),
-                            "ExpiresAt": time.time() + accesLifeTime,
+                            "ExpiresAt": time.time() + accessLifeTime,
                         },
                         "accessTokenSecret",
                         algorithm="HS256",
@@ -621,7 +623,7 @@ async def login(request: Request, bot: bool = False, user_agent: Union[str, None
             {
                 "user_id": int(user.id),
                 "ExpiresAt": time.time()
-                + (accesLifeTime if not bot else accesLifeTimeBot),
+                + (accessLifeTime if not bot else accessLifeTimeBot),
             },
             "accessTokenSecret",
             algorithm="HS256",
@@ -674,7 +676,7 @@ async def refresh_token(request: Request, user_agent: Union[str, None] = Header(
         )
 
     access = jwt.encode(
-        {"user_id": int(token_db.user_id), "ExpiresAt": time.time() + accesLifeTime},
+        {"user_id": int(token_db.user_id), "ExpiresAt": time.time() + accessLifeTime},
         "accessTokenSecret",
         algorithm="HS256",
     )  # Generate new token
