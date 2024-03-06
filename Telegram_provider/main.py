@@ -35,15 +35,15 @@ async def send_login_message(message: types.Message):
     builder = InlineKeyboardBuilder()
     builder.add(types.InlineKeyboardButton(
         text="Log in",
-        callback_data=f"log_login")
+        callback_data="log_login")
     )
     builder.add(types.InlineKeyboardButton(
         text="Register",
-        callback_data=f"log_register")
+        callback_data="log_register")
     )
 
-    await message.answer(f"_To access your files from any device, sign in. " + \
-                            "The files will be linked to your account and you will have full access to them._", 
+    await message.answer("_To access your files from any device, sign in. " + \
+                         "The files will be linked to your account and you will have full access to them._", 
                         reply_markup=builder.as_markup(), 
                         parse_mode="Markdown")
 
@@ -56,7 +56,7 @@ async def start(message: types.Message, state: FSMContext):
     await message.answer("*Attention! This bot is in open beta testing, so there may be significant bugs and errors in operation.\n*" + \
                          f"Current version: {version}", parse_mode="Markdown")
     await message.answer(f"Hello, {message.from_user.full_name}!\n" + \
-                         f"I am the Telegram provider of the fu.andcool.ru service. To get started, send me the file that needs to be uploaded.")
+                         "I am the Telegram provider of the fu.andcool.ru service. To get started, send me the file that needs to be uploaded.")
     
 
 @dp.message(Command('account'))
@@ -72,7 +72,7 @@ async def account(message: types.Message, state: FSMContext):
         builder = InlineKeyboardBuilder()
         builder.add(types.InlineKeyboardButton(
             text="Log out",
-            callback_data=f"logout")
+            callback_data="logout")
         )
 
         await message.answer(f"Logged in as **{user_obj.username}**\n",
@@ -87,7 +87,7 @@ async def account(message: types.Message, state: FSMContext):
 @dp.callback_query(F.data.startswith("log_"))
 async def log(callback: types.CallbackQuery, state: FSMContext):
     await callback.message.delete()
-    message = await callback.message.answer(f"OK, now send me the data from your account in the format:\n```\nMy cool username\nMy cool password```", 
+    message = await callback.message.answer("OK, now send me the data from your account in the format:\n```\nMy cool username\nMy cool password```", 
                                 parse_mode="Markdown")
     await state.set_state(States.wait_to_data)
     await state.update_data(login_register=callback.data.replace("log_", ""))
@@ -126,7 +126,7 @@ async def log_reg(message: types.Message, state: FSMContext):
 
 
 @dp.callback_query(F.data == "logout")
-async def log(callback: types.CallbackQuery, state: FSMContext):
+async def logout(callback: types.CallbackQuery, state: FSMContext):
     user_db = await db.user.find_first(where={"user_id": callback.from_user.id})
     if not user_db:
         await callback.message.answer("You are not logged in")
@@ -204,7 +204,7 @@ async def send_file(message: types.Message, state: FSMContext):
             file = await bot.get_file(file_id)
 
             bio = io.BytesIO()
-            filename = f"voice.mp3"
+            filename = "voice.mp3"
             file_bytes = await bot.download(file_id, destination=bio)
             bio.seek(0)
 
@@ -246,7 +246,7 @@ async def delete_file(callback: types.CallbackQuery, state: FSMContext):
     except Exception as e:
         await callback.message.edit_text("❌Delete error: " + str(e))
 
-async def start():
+async def start_bot():
     """Асинхронная функция для запуска диспатчера"""
     
     await db.connect()  # Connecting to database
@@ -264,4 +264,4 @@ async def start():
 
 
 if __name__ == '__main__':
-    asyncio.run(start())
+    asyncio.run(start_bot())

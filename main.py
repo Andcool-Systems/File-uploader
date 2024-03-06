@@ -2,7 +2,28 @@
 created by AndcoolSystems, 2023-2024
 """
 
-from imports import *
+from fastapi import FastAPI, UploadFile, Request, Header
+from fastapi.responses import JSONResponse, FileResponse, Response
+from typing import Annotated, Union
+import uvicorn
+from config import filetypes, default, accessLifeTime, accessLifeTimeBot
+import aiohttp
+import utils
+from slowapi.errors import RateLimitExceeded
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from fastapi.middleware.cors import CORSMiddleware
+import time
+import aiofiles
+from prisma import Prisma
+import uuid
+import os
+from datetime import datetime
+from dotenv import load_dotenv
+import jwt
+import bcrypt
+import random
+import json
 
 
 def custom_key_func(request: Request):
@@ -28,7 +49,7 @@ app = FastAPI()
 db = Prisma()
 load_dotenv()
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(  # Disable CORS
     CORSMiddleware,
@@ -483,7 +504,7 @@ async def login_token(request: Request,
 
 @app.post("/api/login/discord/{code}")  # login handler
 @limiter.limit(dynamic_limit_provider)
-async def login(code: str, 
+async def login_discord(code: str, 
                 request: Request,
                 user_agent: Union[str, None] = Header(default=None)):
     
@@ -500,7 +521,7 @@ async def login(code: str,
 
     response_json = {}
     async with aiohttp.ClientSession() as session:
-        async with session.post(f'https://discord.com/api/v10/oauth2/token', data=data, headers=headers, auth=auth) as response:
+        async with session.post('https://discord.com/api/v10/oauth2/token', data=data, headers=headers, auth=auth) as response:
             response_json = await response.json()
             if response.status != 200:
                 return JSONResponse({"status": "error", "message": "Internal error, please, log in again"}, status_code=401)
@@ -732,7 +753,7 @@ async def transfer(
 
     try:
         body = await request.json()
-    except:
+    except Exception:
         return JSONResponse(
             content={"status": "error", "message": "Couldn't parse request body"},
             status_code=400,
@@ -755,7 +776,7 @@ async def transfer(
             await db.file.update(
                 where={"id": file.id}, data={"user_id": token_db.user_id}
             )
-        except:
+        except Exception:
             non_success.append(requested_file)
 
     return {"status": "success", "message": "transfered", "unsuccess": non_success}
@@ -903,7 +924,7 @@ async def generate_invite(
 
 @app.post("/api/join/{invite_link}")  # join handler
 @limiter.limit(dynamic_limit_provider)
-async def delete_group(
+async def join_group(
     invite_link: str,
     request: Request,
     Authorization: Annotated[Union[str, None], Header(convert_underscores=False)] = None,
@@ -959,7 +980,7 @@ async def delete_group(
 
 @app.get("/api/invite_info/{invite_link}")  # invite info handler
 @limiter.limit(dynamic_limit_provider)
-async def delete_group(
+async def invite_link(
     invite_link: str,
     request: Request,
     Authorization: Annotated[Union[str, None], Header(convert_underscores=False)] = None,
@@ -995,7 +1016,7 @@ async def delete_group(
 
 @app.post("/api/leave/{group_id}")  # leave handler
 @limiter.limit(dynamic_limit_provider)
-async def delete_group(
+async def leave_group(
     group_id: int,
     request: Request,
     Authorization: Annotated[Union[str, None], Header(convert_underscores=False)] = None,

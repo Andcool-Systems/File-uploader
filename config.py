@@ -4,7 +4,6 @@ filetypes = {
 
     "aac": "audio/aac",
     "mp3": "audio/mpeg",
-    "mpeg": "audio/mpeg",
     "ogg": "audio/ogg",
 
     "gif": "image/gif",

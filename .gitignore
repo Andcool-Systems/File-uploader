@@ -6,3 +6,4 @@
 /Telegram_provider/dataBase.db
 /Telegram_provider/.env
 /FileUploaderBot/.env
+/.ruff_cache
