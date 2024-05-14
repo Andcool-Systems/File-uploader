@@ -31,10 +31,11 @@ function append_to_files_arr(data, id) {
 	let newCell = newRow.insertCell();
 	let newCell2 = newRow.insertCell();
 	// Append a text node to the cell
-	let url = document.createElement("p");
+	let url = document.createElement("a");
 	url.innerHTML = data['file_url_full'];
 	url.id = "url";
-	url.onclick = function () { navigator.clipboard.writeText(data['file_url_full']); }
+	url.href = data['file_url_full'];
+	url.target = "_blank";
 
 	let filename = document.createElement("p");
 	filename.innerHTML = data['user_filename'];
@@ -63,13 +64,12 @@ function append_to_files_arr(data, id) {
 	}
 
 	let a_btn = document.createElement("a");
-	a_btn.href = data['file_url_full'];
+	a_btn.onclick = function () { navigator.clipboard.writeText(data['file_url_full']); }
 	a_btn.className = "href_btn";
-	a_btn.target = "_blank";
 	a_btn.title = "Open in new tab";
 
 	let href_img = document.createElement("img");
-	href_img.src = "./res/external-link.svg";
+	href_img.src = "./res/copy.svg";
 	href_img.id = "external";
 	a_btn.appendChild(href_img);
 
@@ -349,17 +349,31 @@ async function fetch_groups() {
 }
 
 async function fetch_files(accessToken) {
-	if (!accessToken) return [];
-	if (!checkAccess(accessToken)) {
-		let new_access = await get_new_tokens(accessToken);
-		if (!new_access) {
-			localStorage.removeItem("accessToken");
-			return [];
+	const searchParams = new URLSearchParams(window.location.search);
+	const myParam = searchParams.get('share_group');
+
+	if (!myParam){
+		if (!accessToken) return [];
+		if (!checkAccess(accessToken)) {
+			let new_access = await get_new_tokens(accessToken);
+			if (!new_access) {
+				localStorage.removeItem("accessToken");
+				return [];
+			}
+			accessToken = new_access;
+			localStorage.setItem("accessToken", new_access);
 		}
-		accessToken = new_access;
-		localStorage.setItem("accessToken", new_access);
 	}
-	let group = document.getElementById('groups').value;
+	if (myParam){
+		var group = myParam;
+		document.getElementById("groups").style.display = "none";
+		document.getElementById("label_input").style.display = "none";
+		document.getElementById("addit_sett_btn").style.display = "none";
+	}
+	else {
+		var group = document.getElementById('groups').value;
+		document.getElementById("groups").style.display = "block";
+	}
 	try {
 		let response = await axios.get(api_url + "/api/get_files/" + group, {
 			headers: {
@@ -368,13 +382,21 @@ async function fetch_files(accessToken) {
 		})
 		if (!response) return;
 
-		let logim_page_btn = document.getElementById('login_page_a');
-		logim_page_btn.textContent = "Logout";
-		logim_page_btn.href = "/";
-		logim_page_btn.onclick = function () { if (confirm("Log out?")) { logout() } };
-		document.title = "File uploader · " + response.data.username;
-
-		document.getElementById('login_mess').textContent = "Logged as " + response.data.username;
+		if (response.data.username){
+			document.getElementById("groups").style.display = "block";
+			let logim_page_btn = document.getElementById('login_page_a');
+			logim_page_btn.textContent = "Logout";
+			logim_page_btn.href = "/";
+			logim_page_btn.onclick = function () { if (confirm("Log out?")) { logout() } };
+			document.title = "File uploader · " + response.data.username;
+			document.getElementById('login_mess').textContent = "Logged as " + response.data.username;
+			let share_link = document.getElementById("select_group");
+			if (group != "private") 
+				share_link.innerHTML = "Select file group " + `<a style='text-decoration: underline; cursor: pointer' onclick='navigator.clipboard.writeText("https://fu.andcool.ru?share_group=${group}")'>(Copy share link)</a>:`
+			else share_link.innerHTML = "Select file group:"
+		}else{
+			document.getElementById("groups").style.display = "none";
+		}
 		document.getElementById('invite_users').disabled = !response.data.is_group_owner;
 		document.getElementById('leave').title = response.data.is_group_owner ? "Delete group" : "Leave group";
 		document.getElementById('leave').disabled = (response.data.is_group_owner == null);
@@ -455,9 +477,17 @@ addEventListener("DOMContentLoaded", (event) => {
 	document.getElementById('groups').addEventListener("change", (event) => {
 		localStorage.setItem("prev_group", event.target.value);
 		document.getElementById('invite_link_link').style.display = "none";
+		const searchParams = new URLSearchParams(window.location.search);
+		const myParam = searchParams.get('share_group');
+		if (myParam) moveToPage("/");
 		fetch_files(localStorage.getItem("accessToken"),
 			event.target.value);
 	});
+	const searchParams = new URLSearchParams(window.location.search);
+	const myParam = searchParams.get('share_group');
+	if (myParam){
+		fetch_files(localStorage.getItem("accessToken"));
+	}
 	document.getElementById('input_file').addEventListener('change', function (e) {
 		let fileInput = document.getElementById('input_file');
 		let load_mess = document.getElementById('load_mess');

@@ -96,6 +96,7 @@ p{margin-left: 2px;}
     font-weight: 400;
     margin-left: 3%;
     transition: background-color 0.2s;
+    box-sizing: border-box;
 }
 
 #files_table button:hover{
@@ -117,6 +118,7 @@ p{margin-left: 2px;}
     text-decoration: none;
     text-wrap: wrap;
     display: block;
+    margin-right: 0.5rem;
 }
 
 #files_table #url:hover{
@@ -256,6 +258,7 @@ nav a:hover{
     align-items: center;
     justify-content: center;
     margin-right: 1%;
+    cursor: pointer;
 }
 
 #transfer_row{
@@ -337,8 +340,9 @@ nav a:hover{
 }
 
 #external{
-    width: 16px;
-    height: 16px;
+    width: 24px;
+    height: 24px;
+    margin-left: -3px;
     
 }
 

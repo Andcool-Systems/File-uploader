@@ -30,3 +30,4 @@ default = "application/x-msdownload"
 
 accessLifeTime = 432_000
 accessLifeTimeBot = 15_552_000
+pattern = r'^https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+'

@@ -3,10 +3,10 @@ created by AndcoolSystems, 2023-2024
 """
 
 from fastapi import FastAPI, UploadFile, Request, Header
-from fastapi.responses import JSONResponse, FileResponse, Response
+from fastapi.responses import JSONResponse, FileResponse, Response, RedirectResponse
 from typing import Annotated, Union
 import uvicorn
-from config import filetypes, default, accessLifeTime, accessLifeTimeBot
+from config import filetypes, default, accessLifeTime, accessLifeTimeBot, pattern
 import aiohttp
 import utils
 from slowapi.errors import RateLimitExceeded
@@ -24,6 +24,7 @@ import jwt
 import bcrypt
 import random
 import json
+import re
 
 
 def custom_key_func(request: Request):
@@ -193,28 +194,34 @@ async def upload_file(
     else:
         group_id = -1
 
+    file_data = file.file.read()
+    try:
+        is_url = re.match(pattern, file_data.decode("utf-8"))
+    except Exception:
+        is_url = False
+        
     key = str(uuid.uuid4())  # Generate unique delete key
     ext = ("." + file.filename.split(".")[-1].lower()) if file.filename.find(".") != -1 else ""  # Get file extension
     fid = utils.generate_token(10) + (ext if include_ext else "")  # Generate file url
     fn = str(uuid.uuid4()) + ext  # Generate file name
 
-    async with aiofiles.open(f"uploads/{fn}", "wb") as f:  # Save file locally
-        await f.write(file.file.read())
+    if not is_url:
+        async with aiofiles.open(f"uploads/{fn}", "wb") as f:  # Save file locally
+            await f.write(file_data)
 
     now = datetime.now()
+    filetype = filetypes.get(ext[1:], default) if ext and ext.lower()[1:] in filetypes else "download"
     created = await db.file.create(
         {  # Creating a file record
             "user_id": user_id,
             "group_id": int(group_id),
             "created_date": f"{now.day}.{now.month}.{now.year} {now.hour}:{now.minute}:{now.second}",
             "url": fid,
-            "filename": f"uploads/{fn}",
+            "filename": f"uploads/{fn}" if not is_url else file_data.decode("utf-8"),
             "craeted_at": time.time(),
             "last_watched": time.time(),
             "key": key,
-            "type": (
-                filetypes.get(ext[1:], default) if ext and ext.lower()[1:] in filetypes else "download"
-            ),
+            "type": filetype if not is_url else "redirect",
             "ext": ext,
             "size": file.size,
             "user_filename": file.filename,
@@ -249,11 +256,15 @@ async def upload_file(
 @limiter.limit(dynamic_limit_provider)
 async def send_file(url: str, request: Request):
     result = await db.file.find_first(where={"url": url})  # Get file by url
-    if not result or not os.path.isfile(result.filename):
+
+    if not result or (not os.path.isfile(result.filename) and result.type != "redirect"):
         async with aiofiles.open("404.html", mode="rb") as f:
             return Response(
                 await f.read(), media_type="text/html", status_code=404
             )  # if file does'n exists
+    
+    if result.type == "redirect":
+        return RedirectResponse(result.filename, status_code=301)
 
     print(request.headers.get("CF-IPCountry"))
 
@@ -276,15 +287,15 @@ async def send_file(url: str, request: Request):
         await delete_file(result.url, result.key)
         return JSONResponse(content="File not found!", status_code=404)
 
-    if result.type != "download":  # If File extension recognized
-        async with aiofiles.open(result.filename, mode="rb") as f:
-            return Response(
-                await f.read(), media_type=result.type
-            )  # Send file with "Content-type" header
-    else:  # If file extension doesn't recognized
+    if result.type == "download":  # If File extension doesn't recognized
         return FileResponse(
             path=result.filename, filename=result.user_filename, media_type=result.type
         )  # Send file as FileResponse
+
+    async with aiofiles.open(result.filename, mode="rb") as f:
+        return Response(
+            await f.read(), media_type=result.type
+        )  # Send file with "Content-type" header
 
 
 @app.get("/api/delete/{url}")  # File delete handler
@@ -294,30 +305,33 @@ async def delete_file(url: str, key: str = ""):
         return JSONResponse(
             content={"status": "error", "message": "File not found"}, status_code=404
         )  # if file does'n exists
+    try:
+        if result.key == key:  # If provided key matched with key from database record
+            await db.file.delete(
+                where={"id": result.id}
+            )  # Delete file record from database
 
-    if result.key == key:  # If provided key matched with key from database record
-        os.remove(result.filename)  # Delete file
-        await db.file.delete(
-            where={"id": result.id}
-        )  # Delete file record from database
+            async with aiohttp.ClientSession(
+                "https://api.cloudflare.com"
+            ) as session:  # Clear file cache from CloudFlare
+                async with session.post(
+                    f"/client/v4/zones/{os.getenv('ZONE_ID')}/purge_cache",
+                    json={"files": ["https://fu.andcool.ru/file/" + result.url]},
+                    headers={"Authorization": "Bearer " + os.getenv("KEY")}):
+                    pass
+            os.remove(result.filename)  # Delete file
 
-        async with aiohttp.ClientSession(
-            "https://api.cloudflare.com"
-        ) as session:  # Clear file cache from CloudFlare
-            async with session.post(
-                f"/client/v4/zones/{os.getenv('ZONE_ID')}/purge_cache",
-                json={"files": ["https://fu.andcool.ru/file/" + result.url]},
-                headers={"Authorization": "Bearer " + os.getenv("KEY")},
-            ):
-                pass
-
+            return JSONResponse(
+                content={"status": "success", "message": "deleted"}, status_code=200
+            )
+        else:  # If provided key doesn't matched with key from database record
+            return JSONResponse(
+                content={"status": "error", "message": "invalid unique key"},
+                status_code=400,
+            )
+    except Exception:
         return JSONResponse(
             content={"status": "success", "message": "deleted"}, status_code=200
-        )
-    else:  # If provided key doesn't matched with key from database record
-        return JSONResponse(
-            content={"status": "error", "message": "invalid unique key"},
-            status_code=400,
         )
 
 
@@ -330,59 +344,55 @@ async def getFiles(
     Authorization: Annotated[Union[str, None], Header(convert_underscores=False)] = None,
     user_agent: Union[str, None] = Header(default=None)
 ):
-    token_db, auth_error = await check_token(Authorization, user_agent)  # Check token validity
-    if not token_db:  # If token is not valid
-        return JSONResponse(
-            content={
-                "status": "error",
-                "message": "Auth error",
-                "auth_error": auth_error,
-            },
-            status_code=401,
-        )
+    
+    username = None
+    if group_id != "private":
+        token_db, auth_error = await check_token(Authorization, user_agent)  # Check token validity
+        if token_db:
+            user = await db.user.find_first(where={"id": token_db.user_id})
+            username = user.username
 
-    user = await db.user.find_first(
-        where={"id": token_db.user_id}
-    )  # Get user files from db
-
-    if group_id == "private":
-        files = await db.file.find_many(
-            where={"user_id": user.id, "group_id": -1}
-        )  # Get all user files from db
-    else:
         if not group_id.isnumeric():
             return JSONResponse(
                 content={"status": "error", "message": "Invalid group id"},
                 status_code=400,
             )
 
-        group = await db.group.find_first(
-            where={"group_id": group_id}, include={"members": True}
-        )
+        group = await db.group.find_first(where={"group_id": group_id}, include={"members": True})
         if not group:
             return JSONResponse(
                 content={"status": "error", "message": "Group not found"},
                 status_code=404,
             )
-        if user not in group.members:
-            return JSONResponse(
-                {"status": "error", "message": "You are not in the group"},
-                status_code=400,
-            )
 
         files = await db.file.find_many(where={"group_id": group_id})
 
+    else:
+        token_db, auth_error = await check_token(Authorization, user_agent)  # Check token validity
+        if not token_db:  # If token is not valid
+            return JSONResponse(
+                content={
+                    "status": "error",
+                    "message": "Auth error",
+                    "auth_error": auth_error,
+                },
+                status_code=401,
+            )
+
+        user = await db.user.find_first(where={"id": token_db.user_id})  # Get user files from db
+        files = await db.file.find_many(where={"user_id": user.id, "group_id": -1})  # Get all user files from db
+        username = user.username
+
+
     files_response = []
     for file in files:
-        user_filename = file.user_filename[:50] + (
-            "..." if len(file.user_filename) > 50 else ""
-        )
-        usr = (await db.user.find_first(where={"id": file.user_id})).username if group_id != "private" else None
+        user_filename = file.user_filename[:50] + ("..." if len(file.user_filename) > 50 else "")
+        usr = (await db.user.find_first(where={"id": file.user_id})).username if username else None
         files_response.append(
             {
                 "file_url": file.url,
                 "file_url_full": "https://fu.andcool.ru/file/" + file.url,
-                "key": file.key,
+                "key": file.key if username else None,
                 "ext": file.ext,
                 "user_filename": user_filename,
                 "creation_date": file.created_date,
@@ -396,9 +406,9 @@ async def getFiles(
         content={
             "status": "success",
             "message": "messages got successfully",
-            "username": user.username,
+            "username": username,
             "is_group_owner": (
-                None if group_id == "private" else group.admin_id == token_db.user_id
+                None if group_id == "private" or not username else group.admin_id == token_db.user_id
             ),
             "data": files_response,
         },

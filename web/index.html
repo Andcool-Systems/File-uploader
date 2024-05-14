@@ -51,7 +51,7 @@
         <main>
             <h1>File uploader</h1>
             <nav>
-                <a class="selected">Home</a>
+                <a href="https://fu.andcool.ru/" class="selected">Home</a>
                 <a href="https://fu.andcool.ru/login/" id="login_page_a">Login</a>
                 <a href="https://fu.andcool.ru/tos/" id="login_page_a">ToS</a>
                 <a id="login_page_a" href="https://fu.andcool.ru/uploaders/">Uploaders</a>
@@ -73,14 +73,14 @@
                 </div>
             </div>
             <form method="post" enctype="multipart/form-data">
-                <label class="input-file">
+                <label class="input-file" id="label_input">
                        <input type="file" name="file" id="input_file">		
                        <span>Choose file</span>
                  </label>
             </form>
             
             <div id="groups_selector" style="display: none;">
-                <p style="margin-bottom: 5px; margin-left: 0;">Select file group:</p>
+                <p style="margin-bottom: 5px; margin-left: 0;" id="select_group">Select file group:</p>
 
                 <div style="display: flex; align-items: center; flex-direction: row; justify-content: flex-start;">
                     <select id="groups">
