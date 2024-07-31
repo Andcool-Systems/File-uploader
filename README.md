@@ -1,6 +1,9 @@
 # File Uploader
 
-The file uploader is implemented in the Python programming language using FastAPI. All uploaded files are stored on the server. The API provides the ability to preview and download files based on their file extensions.  
+The file uploader is implemented in the Python programming language using FastAPI. All uploaded files are stored on the server. The API provides the ability to preview and download files based on their file extensions.
+
+## New Feature!
+Upload a .txt file containing only the full link to a resource to shorten it! (The service will automatically redirect you to the specified link when you follow a link to a txt file)
 
 ## API Documentation
 
