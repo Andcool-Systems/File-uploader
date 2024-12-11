@@ -2,28 +2,28 @@
 created by AndcoolSystems, 2023-2024
 """
 
-from fastapi import FastAPI, UploadFile, Request, Header
 from fastapi.responses import JSONResponse, FileResponse, Response, RedirectResponse
-from typing import Annotated, Union
-import uvicorn
 from config import filetypes, default, accessLifeTime, accessLifeTimeBot, pattern
-import aiohttp
-import utils
-from slowapi.errors import RateLimitExceeded
 from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
+from fastapi import FastAPI, UploadFile, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
-import time
-import aiofiles
-from prisma import Prisma
-import uuid
-import os
-from datetime import datetime
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
+from typing import Annotated, Union
 from dotenv import load_dotenv
-import jwt
+from datetime import datetime
+from prisma import Prisma
+import aiofiles
+import uvicorn
+import aiohttp
 import bcrypt
 import random
+import utils
+import time
+import uuid
 import json
+import jwt
+import os
 import re
 
 
@@ -80,7 +80,7 @@ async def api(request: Request):
     )
 
 
-async def check_token(Authorization, user_agent):
+async def check_token(Authorization: str, user_agent: str):
     if not Authorization:  # If token doesn't provided
         return None, {"message": "No Authorization header provided", "errorId": -1}
 
@@ -92,15 +92,11 @@ async def check_token(Authorization, user_agent):
         }
 
     try:
-        token = jwt.decode(
-            token_header[1], "accessTokenSecret", algorithms=["HS256"]
-        )  # Decode token
+        token = jwt.decode(token_header[1], "accessTokenSecret", algorithms=["HS256"])  # Decode token
     except jwt.exceptions.DecodeError:
         return None, {"message": "Invalid access token", "errorId": -4}
 
-    token_db = await db.token.find_first(
-        where={"accessToken": token_header[1]}, include={"user": True}
-    )  # Find token in db
+    token_db = await db.token.find_first(where={"accessToken": token_header[1]}, include={"user": True})  # Find token in db
 
     if not token_db:  # If not found
         return None, {"message": "Token not found", "errorId": -5}
@@ -311,11 +307,8 @@ async def delete_file(url: str, key: str = ""):
                 where={"id": result.id}
             )  # Delete file record from database
 
-            async with aiohttp.ClientSession(
-                "https://api.cloudflare.com"
-            ) as session:  # Clear file cache from CloudFlare
-                async with session.post(
-                    f"/client/v4/zones/{os.getenv('ZONE_ID')}/purge_cache",
+            async with aiohttp.ClientSession("https://api.cloudflare.com") as session:  # Clear file cache from CloudFlare
+                async with session.post(f"/client/v4/zones/{os.getenv('ZONE_ID')}/purge_cache",
                     json={"files": ["https://fu.andcool.ru/file/" + result.url]},
                     headers={"Authorization": "Bearer " + os.getenv("KEY")}):
                     pass
@@ -396,7 +389,7 @@ async def getFiles(
                 "ext": file.ext,
                 "user_filename": user_filename,
                 "creation_date": file.created_date,
-                "craeted_at": file.craeted_at,
+                "created_at": file.craeted_at,
                 "size": utils.calculate_size(file.size),
                 "username": usr,
                 "synced": True,
@@ -416,7 +409,7 @@ async def getFiles(
     )
 
 
-@app.post("/api/register")  # Registartion handler
+@app.post("/api/register")  # Registration handler
 @limiter.limit(dynamic_limit_provider)
 async def register(request: Request, bot: bool = False, user_agent: Union[str, None] = Header(default=None)):
     try:
@@ -444,7 +437,7 @@ async def register(request: Request, bot: bool = False, user_agent: Union[str, N
         where={"username": body["username"]}
     )  # Find same username in db
 
-    if user:  # If iser already exists
+    if user:  # If user already exists
         return JSONResponse(
             {
                 "status": "error",
@@ -485,7 +478,7 @@ async def register(request: Request, bot: bool = False, user_agent: Union[str, N
             "status": "success",
             "accessToken": access,
             "username": body["username"],
-            "message": "registred",
+            "message": "registered",
         },
         status_code=200,
     )
@@ -789,7 +782,7 @@ async def transfer(
         except Exception:
             non_success.append(requested_file)
 
-    return {"status": "success", "message": "transfered", "unsuccess": non_success}
+    return {"status": "success", "message": "transferred", "unsuccess": non_success}
 
 
 # --------------------------------------Groups------------------------------------------

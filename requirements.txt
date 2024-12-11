@@ -1,0 +1,9 @@
+fastapi
+slowapi
+python-dotenv
+prisma
+aiofiles
+uvicorn
+aiohttp
+bcrypt
+PyJWT

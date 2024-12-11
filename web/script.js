@@ -601,4 +601,3 @@ async function upload(file) {
 	}
 
 }
-

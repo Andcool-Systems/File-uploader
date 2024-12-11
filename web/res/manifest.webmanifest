@@ -1,0 +1,20 @@
+{
+    "name": "File Uploader",
+    "short_name": "File Upload",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#222222",
+    "theme_color": "#222222",
+    "icons": [
+      {
+        "src": "/res/pag.png",
+        "sizes": "626x626",
+        "type": "image/png"
+      }
+    ],
+    "orientation": "natural",
+    "dir": "auto",
+    "lang": "en",
+    "id": "fu.andcool",
+    "description": "Simple File Uploader"
+  }

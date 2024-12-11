@@ -5,7 +5,7 @@ The file uploader is implemented in the Python programming language using FastAP
 ## API Documentation
 
 The API is currently hosted at [fu.andcool.ru](https://fu.andcool.ru/).   
-Page redirection is handled through the nginx proxy server. The API consists of 2 pathes:  
+Page redirection is handled through the nginx proxy server. The API consists of 2 paths:  
 
 - `/file/` – Endpoint where all files are located.
 - `/api/` – Main API endpoint
@@ -95,7 +95,7 @@ On successful execution, the API returns a `200` HTTP code along with a JSON res
 | 400        | No file uploaded                    | No file is given in the request body                                           |
 | 413        | File size exceeds the limit (100MB) | The file size exceeds 100MB                                                    |
 | 400        | Invalid group id                    | `group_id` parameter contains non-numerical value                              |
-| 404        | Group not found                     | The group wuth provided `group_id` not found                                   |
+| 404        | Group not found                     | The group with provided `group_id` not found                                   |
 | 403        | You are not in the group            | Group is exists, but you are has not permissions to upload files in this group |
 
 ### Delete a file
@@ -158,7 +158,7 @@ Successful execution returns a `200` HTTP code, indicating successful registrati
 | 3       | 403       | Wrong password | Incorrect password |
 | 4       | 404       | User not found | Username not found |
 
-### Refreshe the token
+### Refresh the token
 `POST /api/refresh_token`  
 Request limit per minute: 10 times.   
 The request body includes the `accessToken` field containing only the token (without `Bearer`).   
@@ -227,7 +227,7 @@ Errors described in section `1.1` may occur as well.
 | Error Code | message                  | Possible Reasons                                                               |
 | ---------- | ------------------------ | ------------------------------------------------------------------------------ |
 | 400        | Invalid group id         | `group_id` parameter contains non-numerical value                              |
-| 404        | Group not found          | The group wuth provided `group_id` not found                                   |
+| 404        | Group not found          | The group with provided `group_id` not found                                   |
 | 403        | You are not in the group | Group is exists, but you are has not permissions to upload files in this group |
 
 
@@ -258,7 +258,7 @@ It takes the `Authorization` header containing the access token.
 ```json
 {
     "status": "success",
-    "message": "transfered", 
+    "message": "transferred", 
     "unsuccess": [
         {
             "file_url": "4yn-8yjhsR",
@@ -331,7 +331,7 @@ Errors described in section `1.1` may occur as well.
 | Error Code | message                                            | Possible Reasons                       |
 | ---------- | -------------------------------------------------- | -------------------------------------- |
 | 404        | Group not found                                    | Group with passed `group_id` not found |
-| 403        | You dont have any permissions to delete this group | You are not owner of this group        |
+| 403        | You don't have any permissions to delete this group | You are not owner of this group        |
 
 ### Generate a new invite link
 `GET /api/generate_invite/{group_id}`  
@@ -355,7 +355,7 @@ Errors described in section `1.1` may occur as well.
 | Error Code | message                       | Possible Reasons                       |
 | ---------- | ----------------------------- | -------------------------------------- |
 | 404        | Group not found               | Group with passed `group_id` not found |
-| 403        | You dont have any permissions | You are not owner of this group        |
+| 403        | You don't have any permissions | You are not owner of this group        |
 
 ### Join to a group
 `POST /api/join/{invite_link}`  
