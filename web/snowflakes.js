@@ -66,7 +66,7 @@ function run_anim() {
 
     for (let x = 0; x < count; x++) {
         var snowflake = document.createElement("p");
-        snowflake.innerHTML = "*";
+        snowflake.innerText = "*";
         snowflake.className = "snowflake";
         table.appendChild(snowflake);
         object_array.push(new Circle(snowflake));

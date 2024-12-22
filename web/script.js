@@ -32,24 +32,24 @@ function append_to_files_arr(data, id) {
 	let newCell2 = newRow.insertCell();
 	// Append a text node to the cell
 	let url = document.createElement("a");
-	url.innerHTML = data['file_url_full'];
+	url.innerText = `${window.location.origin}/file/${data['file_url']}`;
 	url.id = "url";
-	url.href = data['file_url_full'];
+	url.href = `${window.location.origin}/file/${data['file_url']}`;
 	url.target = "_blank";
 
 	let filename = document.createElement("p");
-	filename.innerHTML = data['user_filename'];
+	filename.innerText = data['user_filename'];
 	filename.id = "filename";
 
 	let creation_date_div = document.createElement("div");
 	creation_date_div.id = "creation_date_div";
 
 	let cr_time = document.createElement("p");
-	cr_time.innerHTML = data['creation_date'] + " " + (!data['size'] || data['size'] == "0B" ? "" : data['size']);
+	cr_time.innerText = data['creation_date'] + " " + (!data['size'] || data['size'] == "0B" ? "" : data['size']);
 	cr_time.id = "cr_time";
 
 	const button = document.createElement('button');
-	button.innerHTML = 'Delete';
+	button.innerText = 'Delete';
 	button.className = "button"
 	button.onclick = function () { delete_file(data, id); }
 
@@ -74,7 +74,7 @@ function append_to_files_arr(data, id) {
 	a_btn.appendChild(href_img);
 
 	let username = document.createElement("p");
-	username.innerHTML = data['username'] ? data['username'] + "'s file" : "";
+	username.innerText = data['username'] ? data['username'] + "'s file" : "";
 	username.id = "username";
 
 	let urls_div = document.createElement("div");
@@ -170,7 +170,7 @@ async function create_invite() {
 		if (!response) return;
 		if (response.status == 200) {
 			let invite_link = document.getElementById('invite_link');
-			invite_link.innerHTML = response.data.invite_link;
+			invite_link.innerText = response.data.invite_link;
 			invite_link.onclick = () => {navigator.clipboard.writeText(response.data.invite_link)}
 			document.getElementById('invite_link_link').style.display = "block";
 		}else{
@@ -328,7 +328,7 @@ async function fetch_groups() {
 		let value_finded = false;
 		for (const group of response.data.groups) {
 			let groupel = document.createElement("option");
-			groupel.innerHTML = group.name;
+			groupel.innerText = group.name;
 			groupel.value = group.group_id;
 			groups.appendChild(groupel);
 			if (group.group_id == prev_group){
@@ -393,7 +393,7 @@ async function fetch_files(accessToken) {
 			let share_link = document.getElementById("select_group");
 			if (group != "private") 
 				share_link.innerHTML = "Select file group " + `<a style='text-decoration: underline; cursor: pointer' onclick='navigator.clipboard.writeText("https://fu.andcool.ru?share_group=${group}")'>(Copy share link)</a>:`
-			else share_link.innerHTML = "Select file group:"
+			else share_link.innerText = "Select file group:"
 		}else{
 			document.getElementById("groups").style.display = "none";
 		}
@@ -421,7 +421,7 @@ async function fetch_files(accessToken) {
 			// Append a text node to the cell
 			let transfer = document.createElement("button");
 			transfer.id = "trensfer";
-			transfer.innerHTML = "Transfer local files to an account"
+			transfer.innerText = "Transfer local files to an account"
 			transfer.onclick = function () { if (confirm("Transfer local files to an active account?")) transfer_func() }
 			if (len > 0) newCell.appendChild(transfer);
 		}

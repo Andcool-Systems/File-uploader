@@ -165,7 +165,7 @@
                 if (!response) moveToPage("/login");
                 if (response.status == 200) {
                     let h1 = document.getElementById("invited_to");
-                    h1.innerHTML = `You have been invited to a "` + response.data.name + `" group!`
+                    h1.innerText = `You have been invited to a "` + response.data.name + `" group!`
 
                     let logim_page_btn = document.getElementById('login_page_a');
                     logim_page_btn.textContent = "Logout";
@@ -178,7 +178,7 @@
                     moveToPage("/login");
                 }
                 if (e.response){
-                    document.getElementById("invited_to").innerHTML = e.response.data.message;
+                    document.getElementById("invited_to").innerText = e.response.data.message;
                 }
             }
         }
@@ -213,7 +213,7 @@
                     moveToPage("/login");
                 }
                 if (e.response){
-                    document.getElementById("error").innerHTML = e.response.data.message;
+                    document.getElementById("error").innerText = e.response.data.message;
                 }
             }
         }

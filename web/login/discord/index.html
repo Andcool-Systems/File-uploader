@@ -120,7 +120,7 @@
             if (!code) moveToPage("/");
             try {
                 let response = await axios.post(api_url + "/api/login/discord/" + code)
-                if (!response) h1.innerHTML = "Server answered with error, please, log in again"
+                if (!response) h1.innerText = "Server answered with error, please, log in again"
                 if (response.status == 200) {
                     localStorage.setItem("accessToken", response.data.accessToken);
                     moveToPage("/");
@@ -128,7 +128,7 @@
             } catch (e){
                 console.log(e)
                 if (e.response){
-                    document.getElementById("error").innerHTML = e.response.data.message;
+                    document.getElementById("error").innerText = e.response.data.message;
                 }
             }
         }
